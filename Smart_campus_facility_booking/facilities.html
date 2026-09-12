@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Browse Facilities — CampusBook</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">CB</span>CampusBook</a>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="facilities.html" class="active">Facilities</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="login.html">Login</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-ghost">Login</a>
+      <a href="register.html" class="btn btn-primary">Register</a>
+      <button class="nav-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<section class="section" style="padding-bottom:20px;">
+  <div class="wrap">
+    <div class="section-head" style="margin-bottom:28px;">
+      <span class="kicker">Facilities</span>
+      <h2>Find a space for anything</h2>
+      <p>Search by name or location, or filter by category, capacity and availability.</p>
+    </div>
+
+    <div class="facility-toolbar">
+      <div class="search-box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input type="text" id="searchInput" placeholder="Search facilities...">
+      </div>
+      <select id="categoryFilter">
+        <option value="">All Categories</option>
+        <option value="Academic">Academic</option>
+        <option value="Sports">Sports</option>
+        <option value="Student Spaces">Student Spaces</option>
+      </select>
+      <select id="locationFilter">
+        <option value="">All Locations</option>
+      </select>
+      <select id="availabilityFilter">
+        <option value="">All Availability</option>
+        <option value="Available">Available</option>
+        <option value="Booked">Booked</option>
+        <option value="Maintenance">Maintenance</option>
+      </select>
+    </div>
+
+    <p class="result-count" id="resultCount">Loading facilities&hellip;</p>
+
+    <div class="facility-grid" id="facilityGrid"></div>
+
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      <h3>No facilities match your search</h3>
+      <p>Try clearing a filter or searching a different term.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer" style="margin-top:40px;">
+  <div class="wrap">
+    <div class="footer-bottom" style="border-top:none; padding-top:0;">
+      <span>&copy; 2026 CampusBook &mdash; University Facility Management System</span>
+      <a href="index.html" style="color:rgba(255,255,255,0.75);">Back to home</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

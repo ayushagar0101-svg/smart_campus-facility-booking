@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facility Details — CampusBook</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">CB</span>CampusBook</a>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="facilities.html" class="active">Facilities</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="login.html">Login</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-ghost">Login</a>
+      <a href="register.html" class="btn btn-primary">Register</a>
+      <button class="nav-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" id="detailsRoot">
+  <p style="margin:24px 0 0; font-size:0.88rem; color:var(--ink-soft);">
+    <a href="facilities.html" style="color:var(--forest); font-weight:600;">&larr; Back to Facilities</a>
+  </p>
+
+  <div class="details-hero">
+    <div>
+      <div class="details-media" id="facMedia"></div>
+      <h1 id="facName" style="margin-top:26px;"></h1>
+      <span class="badge" id="facAvailBadge" style="margin-top:8px;"></span>
+      <p class="desc" id="facDesc" style="margin-top:16px;"></p>
+      <div class="facility-meta">
+        <span>🏷️ Category: <strong id="facCategory"></strong></span>
+        <span>📍 Location: <strong id="facLocation"></strong></span>
+        <span>👥 Capacity: <strong id="facCapacity"></strong></span>
+      </div>
+      <h4 style="margin-top:26px; font-size:1rem;">Available equipment</h4>
+      <div class="equip-list" id="facEquipment" style="margin-top:12px;"></div>
+      <h4 style="font-size:1rem;">Opening hours</h4>
+      <div class="hours-row"><span>Open</span><strong id="facHoursOpen"></strong></div>
+      <div class="hours-row"><span>Close</span><strong id="facHoursClose"></strong></div>
+    </div>
+
+    <div class="booking-panel" id="book">
+      <h3 style="margin-bottom:18px;">Book This Facility</h3>
+      <form id="bookingForm">
+        <input type="hidden" id="bookingFacilityId">
+        <div class="field">
+          <label for="bookDate">Date</label>
+          <input type="date" id="bookDate" required>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="bookStart">Start time</label>
+            <input type="time" id="bookStart" required>
+          </div>
+          <div class="field">
+            <label for="bookEnd">End time</label>
+            <input type="time" id="bookEnd" required>
+          </div>
+        </div>
+        <div class="field">
+          <label for="bookPurpose">Purpose</label>
+          <input type="text" id="bookPurpose" placeholder="e.g. Department seminar" required>
+        </div>
+        <div class="field">
+          <label for="bookParticipants">Number of participants</label>
+          <input type="number" id="bookParticipants" min="1" placeholder="e.g. 20" required>
+        </div>
+        <button type="button" class="btn btn-outline btn-block" id="checkAvailabilityBtn">Check Availability</button>
+        <div style="margin-top:14px;">
+          <span class="badge" id="availabilityResult" style="display:none;"></span>
+        </div>
+        <button type="button" class="btn btn-primary btn-block" id="confirmBookingBtn" style="display:none; margin-top:14px;">Confirm Booking</button>
+      </form>
+      <div id="bookingConfirmed" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="site-footer" style="margin-top:40px;">
+  <div class="wrap">
+    <div class="footer-bottom" style="border-top:none; padding-top:0;">
+      <span>&copy; 2026 CampusBook &mdash; University Facility Management System</span>
+      <a href="index.html" style="color:rgba(255,255,255,0.75);">Back to home</a>
+    </div>
+  </div>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Register — CampusBook</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a href="index.html" class="brand"><span class="mark">CB</span>CampusBook</a>
+    <nav class="main-nav">
+      <a href="index.html">Home</a>
+      <a href="facilities.html">Facilities</a>
+      <a href="index.html#about">About</a>
+      <a href="index.html#contact">Contact</a>
+      <a href="login.html">Login</a>
+    </nav>
+    <div class="header-actions">
+      <a href="login.html" class="btn btn-ghost">Login</a>
+      <button class="nav-toggle" aria-label="Menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="auth-shell">
+  <div class="auth-visual">
+    <a href="index.html" class="brand" style="color:#fff;"><span class="mark" style="background:var(--brass); color:var(--forest);">CB</span>CampusBook</a>
+    <div>
+      <h2>Create your account in under a minute.</h2>
+      <p>Register with your university email and student or faculty ID to start booking campus facilities.</p>
+    </div>
+    <p class="quote">&ldquo;From the seminar hall to the sports ground &mdash; booked in a tap.&rdquo;</p>
+  </div>
+  <div class="auth-form-side">
+    <div class="auth-card">
+      <h1>Create your account</h1>
+      <p class="sub">Register with your student or faculty details.</p>
+
+      <form id="registerForm" novalidate>
+        <div class="field">
+          <label for="regName">Full name</label>
+          <input id="regName" placeholder="e.g. Ayush Verma" required>
+          <span class="error-msg"></span>
+        </div>
+        <div class="field">
+          <label for="regEmail">Email</label>
+          <input id="regEmail" type="email" placeholder="you@campus.edu" required>
+          <span class="error-msg"></span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="regPhone">Phone number</label>
+            <input id="regPhone" type="tel" placeholder="+91 98765 43210" required>
+            <span class="error-msg"></span>
+          </div>
+          <div class="field">
+            <label for="regId">Student / Faculty ID</label>
+            <input id="regId" placeholder="e.g. CSE21B045" required>
+            <span class="error-msg"></span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="regDepartment">Department</label>
+          <select id="regDepartment" required>
+            <option value="">Select department</option>
+            <option>Computer Science & Engineering</option>
+            <option>Electronics & Communication</option>
+            <option>Mechanical Engineering</option>
+            <option>Civil Engineering</option>
+            <option>Information Technology</option>
+            <option>Electrical Engineering</option>
+          </select>
+          <span class="error-msg"></span>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label for="regPassword">Password</label>
+            <input id="regPassword" type="password" placeholder="At least 6 characters" required>
+            <span class="error-msg"></span>
+          </div>
+          <div class="field">
+            <label for="regConfirm">Confirm password</label>
+            <input id="regConfirm" type="password" placeholder="Re-enter password" required>
+            <span class="error-msg"></span>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+      </form>
+
+      <p class="form-foot">Already have an account? <a href="login.html">Login</a></p>
+    </div>
+  </div>
+</div>
+
+<script src="js/main.js"></script>
+</body>
+</html>

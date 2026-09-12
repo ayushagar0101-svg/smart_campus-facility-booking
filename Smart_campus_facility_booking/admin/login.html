@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Administrator Login — CampusBook</title>
+<link rel="stylesheet" href="../css/style.css">
+<link rel="stylesheet" href="../css/admin.css">
+</head>
+<body class="admin-body">
+
+<div class="admin-login-shell">
+  <div class="admin-login-card">
+    <div class="admin-brand"><span class="mark">CB</span><span class="title">CampusBook</span></div>
+    <h1>Administration</h1>
+    <p class="sub">Sign in to manage facilities, bookings and users.</p>
+
+    <form id="adminLoginForm" novalidate>
+      <div class="admin-field">
+        <label for="adminEmail">Email</label>
+        <input id="adminEmail" type="email" placeholder="admin@campusbook.com" required>
+      </div>
+      <div class="admin-field">
+        <label for="adminPassword">Password</label>
+        <input id="adminPassword" type="password" placeholder="Enter password" required>
+        <span class="err">Incorrect email or password.</span>
+      </div>
+      <button type="submit" class="admin-btn">Login</button>
+    </form>
+
+    <div class="admin-demo-hint">Demo access &mdash; admin@campusbook.com / admin123</div>
+    <p class="admin-authorized-note">Authorized personnel only.</p>
+    <a href="../index.html" class="back-to-site">&larr; Back to CampusBook</a>
+  </div>
+</div>
+
+<script src="../js/main.js"></script>
+<script src="../js/admin.js"></script>
+</body>
+</html>
