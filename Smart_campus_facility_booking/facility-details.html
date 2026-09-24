@@ -98,5 +98,316 @@
 </footer>
 
 <script src="js/main.js"></script>
+
+<script>
+
+let currentFacility = null;
+
+
+// Get facility ID from URL
+const params = new URLSearchParams(window.location.search);
+const facilityId = params.get("id");
+
+
+// HTML elements
+const facName = document.getElementById("facName");
+const facDesc = document.getElementById("facDesc");
+const facCategory = document.getElementById("facCategory");
+const facLocation = document.getElementById("facLocation");
+const facCapacity = document.getElementById("facCapacity");
+const facHoursOpen = document.getElementById("facHoursOpen");
+const facHoursClose = document.getElementById("facHoursClose");
+const facAvailBadge = document.getElementById("facAvailBadge");
+
+const bookingFacilityId = document.getElementById("bookingFacilityId");
+
+const bookDate = document.getElementById("bookDate");
+const bookStart = document.getElementById("bookStart");
+const bookEnd = document.getElementById("bookEnd");
+const bookPurpose = document.getElementById("bookPurpose");
+const bookParticipants = document.getElementById("bookParticipants");
+
+const checkAvailabilityBtn =
+    document.getElementById("checkAvailabilityBtn");
+
+const confirmBookingBtn =
+    document.getElementById("confirmBookingBtn");
+
+const availabilityResult =
+    document.getElementById("availabilityResult");
+
+const bookingConfirmed =
+    document.getElementById("bookingConfirmed");
+
+
+// Check facility ID
+if (!facilityId) {
+
+    alert("No facility selected.");
+
+} else {
+
+    loadFacility();
+}
+
+
+// Load facility from MySQL
+async function loadFacility() {
+
+    try {
+
+        const response =
+            await fetch(`http://localhost:3000/facility/${facilityId}`);
+
+        const facility = await response.json();
+
+        if (!response.ok) {
+            throw new Error(facility.message);
+        }
+
+        currentFacility = facility;
+
+        // Display facility information
+        facName.textContent = facility.name;
+
+        facDesc.textContent =
+            facility.description || "No description available.";
+
+        facCategory.textContent =
+            facility.category || "General";
+
+        facLocation.textContent =
+            facility.location || "N/A";
+
+        facCapacity.textContent =
+            facility.capacity || "N/A";
+
+        facHoursOpen.textContent =
+            facility.open_time || "--";
+
+        facHoursClose.textContent =
+            facility.close_time || "--";
+
+        facAvailBadge.textContent =
+            facility.availability;
+
+        bookingFacilityId.value =
+            facility.facility_id;
+
+        // Set maximum participants
+        if (facility.capacity) {
+            bookParticipants.max = facility.capacity;
+        }
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Unable to load facility.");
+    }
+}
+
+
+// Check availability
+checkAvailabilityBtn.addEventListener("click", async function() {
+
+    const date = bookDate.value;
+    const startTime = bookStart.value;
+    const endTime = bookEnd.value;
+
+    if (!date || !startTime || !endTime) {
+
+        alert("Please select date, start time and end time.");
+
+        return;
+    }
+
+
+    if (startTime >= endTime) {
+
+        alert("End time must be after start time.");
+
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:3000/check-availability",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    facility_id: facilityId,
+                    date: date,
+                    start_time: startTime,
+                    end_time: endTime
+                })
+            }
+        );
+
+
+        const data = await response.json();
+
+
+        availabilityResult.style.display = "inline-block";
+
+        if (data.available) {
+
+            availabilityResult.textContent =
+                "Available ✓";
+
+            confirmBookingBtn.style.display = "block";
+
+        } else {
+
+            availabilityResult.textContent =
+                data.message;
+
+            confirmBookingBtn.style.display = "none";
+        }
+
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Cannot connect to server.");
+    }
+
+});
+
+
+// Confirm booking
+confirmBookingBtn.addEventListener("click", async function() {
+
+    // Get logged-in user
+    const storedUser = localStorage.getItem("user");
+
+    if (!storedUser) {
+
+        alert("Please login before booking.");
+
+        window.location.href = "login.html";
+
+        return;
+    }
+
+
+    const user = JSON.parse(storedUser);
+
+
+    const date = bookDate.value;
+    const startTime = bookStart.value;
+    const endTime = bookEnd.value;
+    const purpose = bookPurpose.value.trim();
+    const participants =
+        Number(bookParticipants.value);
+
+
+    if (!date || !startTime || !endTime || !purpose || !participants) {
+
+        alert("Please fill all booking details.");
+
+        return;
+    }
+
+
+    if (
+        currentFacility.capacity &&
+        participants > currentFacility.capacity
+    ) {
+
+        alert(
+            `Maximum capacity is ${currentFacility.capacity} participants.`
+        );
+
+        return;
+    }
+
+
+    try {
+
+        const response = await fetch(
+            "http://localhost:3000/booking",
+            {
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    user_id: user.user_id,
+
+                    facility_id: facilityId,
+
+                    date: date,
+
+                    start_time: startTime,
+
+                    end_time: endTime,
+
+                    purpose: purpose,
+
+                    participants: participants
+                })
+            }
+        );
+
+
+        const data = await response.json();
+
+
+        if (response.ok) {
+
+            bookingConfirmed.style.display = "block";
+
+            bookingConfirmed.innerHTML = `
+                <div style="margin-top:20px;">
+                    <h4>Booking Request Submitted ✓</h4>
+                    <p>
+                        Your booking request has been submitted
+                        successfully.
+                    </p>
+                    <p>
+                        Booking ID: <strong>${data.booking_id}</strong>
+                    </p>
+                    <p>
+                        Status: <strong>Pending</strong>
+                    </p>
+                    <a href="user/my-bookings.html"
+                       class="btn btn-primary"
+                       style="margin-top:12px;">
+                       View My Bookings
+                    </a>
+                </div>
+            `;
+
+            confirmBookingBtn.style.display = "none";
+
+        } else {
+
+            alert(data.message);
+        }
+
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Cannot connect to server.");
+    }
+
+});
+
+</script>
+
 </body>
 </html>

@@ -80,5 +80,191 @@
 </footer>
 
 <script src="js/main.js"></script>
+
+<script>
+let facilities = [];
+
+const facilityGrid = document.getElementById("facilityGrid");
+const resultCount = document.getElementById("resultCount");
+const emptyState = document.getElementById("emptyState");
+
+const searchInput = document.getElementById("searchInput");
+const categoryFilter = document.getElementById("categoryFilter");
+const locationFilter = document.getElementById("locationFilter");
+const availabilityFilter = document.getElementById("availabilityFilter");
+
+
+// Load facilities from MySQL
+async function loadFacilities() {
+
+    try {
+
+        const response = await fetch("http://localhost:3000/facilities");
+
+        if (!response.ok) {
+            throw new Error("Failed to load facilities");
+        }
+
+        facilities = await response.json();
+
+        createLocationOptions();
+
+        displayFacilities(facilities);
+
+    } catch (error) {
+
+        console.log(error);
+
+        resultCount.textContent = "Unable to load facilities.";
+    }
+}
+
+
+// Create location filter options
+function createLocationOptions() {
+
+    const locations = [...new Set(
+        facilities.map(facility => facility.location)
+    )];
+
+    locations.forEach(location => {
+
+        const option = document.createElement("option");
+
+        option.value = location;
+        option.textContent = location;
+
+        locationFilter.appendChild(option);
+    });
+}
+
+
+// Display facilities
+function displayFacilities(data) {
+
+    facilityGrid.innerHTML = "";
+
+    resultCount.textContent =
+        `${data.length} ${data.length === 1 ? "facility" : "facilities"} found`;
+
+    if (data.length === 0) {
+
+        emptyState.style.display = "block";
+
+        return;
+    }
+
+    emptyState.style.display = "none";
+
+
+    data.forEach(facility => {
+
+        const card = document.createElement("div");
+
+        card.className = "facility-card";
+
+        card.innerHTML = `
+
+            <div class="facility-card-content">
+
+                <span class="facility-category">
+                    ${facility.category || "General"}
+                </span>
+
+                <h3>${facility.name}</h3>
+
+                <p>${facility.description || "No description available."}</p>
+
+                <div class="facility-info">
+                    <span>📍 ${facility.location || "N/A"}</span>
+                    <span>👥 Capacity: ${facility.capacity || "N/A"}</span>
+                </div>
+
+                <div class="facility-info">
+
+                    <span>
+                        🕒 ${facility.open_time || "--"} -
+                        ${facility.close_time || "--"}
+                    </span>
+
+                    <span class="availability ${facility.availability}">
+                        ${facility.availability}
+                    </span>
+
+                </div>
+
+            </div>
+        `;
+
+        facilityGrid.appendChild(card);
+    });
+}
+
+
+// Filter facilities
+function filterFacilities() {
+
+    const search = searchInput.value.toLowerCase();
+
+    const category = categoryFilter.value;
+    const location = locationFilter.value;
+    const availability = availabilityFilter.value;
+
+
+    const filtered = facilities.filter(facility => {
+
+        const matchesSearch =
+            facility.name.toLowerCase().includes(search) ||
+            (facility.location || "").toLowerCase().includes(search) ||
+            (facility.description || "").toLowerCase().includes(search);
+
+
+        const matchesCategory =
+            category === "" ||
+            facility.category === category;
+
+
+        const matchesLocation =
+            location === "" ||
+            facility.location === location;
+
+
+        const matchesAvailability =
+            availability === "" ||
+            facility.availability.toLowerCase() ===
+            availability.toLowerCase();
+
+
+        return (
+            matchesSearch &&
+            matchesCategory &&
+            matchesLocation &&
+            matchesAvailability
+        );
+    });
+
+
+    displayFacilities(filtered);
+}
+
+
+// Search
+searchInput.addEventListener("input", filterFacilities);
+
+// Category
+categoryFilter.addEventListener("change", filterFacilities);
+
+// Location
+locationFilter.addEventListener("change", filterFacilities);
+
+// Availability
+availabilityFilter.addEventListener("change", filterFacilities);
+
+
+// Start
+loadFacilities();
+
+</script>
+
 </body>
 </html>
