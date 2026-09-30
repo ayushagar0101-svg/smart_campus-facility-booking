@@ -3,7 +3,11 @@
    ========================================================= */
 
 (function guard() {
-  CB.requireUserAuth();
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+        window.location.href = "../login.html";
+    }
 })();
 
 function initSidebarToggle() {
@@ -21,7 +25,7 @@ function initLogout() {
   document.querySelectorAll(".logout-link").forEach((el) => {
     el.addEventListener("click", (e) => {
       e.preventDefault();
-      CB.Data.clearSession();
+      localStorage.removeItem("user");
       CB.toast("You have been logged out.", "ok");
       setTimeout(() => { window.location.href = "../login.html"; }, 500);
     });
@@ -29,12 +33,18 @@ function initLogout() {
 }
 
 function populateUserChip() {
-  const session = CB.Data.getSession();
-  if (!session) return;
-  document.querySelectorAll(".user-chip .avatar-circle").forEach((el) => {
-    el.textContent = session.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-  });
-  document.querySelectorAll(".user-chip .user-chip-name").forEach((el) => { el.textContent = session.name; });
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) return;
+
+    document.querySelectorAll(".user-chip .avatar-circle").forEach((el) => {
+        el.textContent = user.name
+            .split(" ")
+            .map((p) => p[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+    });
 }
 
 function currentUserBookings() {
@@ -43,52 +53,230 @@ function currentUserBookings() {
 }
 
 /* ---------------- Dashboard ---------------- */
-function initDashboard() {
-  const root = document.getElementById("dashboardRoot");
-  if (!root) return;
-  const session = CB.Data.getSession();
-  const bookings = currentUserBookings();
+async function initDashboard() {
 
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
-  document.getElementById("greetingText").textContent = `${greeting}, ${session.name.split(" ")[0]} \uD83D\uDC4B`;
+    const root = document.getElementById("dashboardRoot");
 
-  const total = bookings.length;
-  const pending = bookings.filter((b) => b.status === "Pending").length;
-  const approved = bookings.filter((b) => b.status === "Approved").length;
-  const cancelled = bookings.filter((b) => b.status === "Cancelled" || b.status === "Rejected").length;
-  document.getElementById("statTotal").textContent = total;
-  document.getElementById("statPending").textContent = pending;
-  document.getElementById("statApproved").textContent = approved;
-  document.getElementById("statCancelled").textContent = cancelled;
+    if (!root) return;
 
-  const upcoming = bookings
-    .filter((b) => b.status === "Approved" || b.status === "Pending")
-    .sort((a, b) => new Date(a.date) - new Date(b.date))[0];
+    const user = JSON.parse(localStorage.getItem("user"));
 
-  const upcomingWrap = document.getElementById("upcomingWrap");
-  if (upcoming) {
-    upcomingWrap.innerHTML = `
-      <div class="upcoming-card">
-        <div>
-          <div class="facility-name">${upcoming.facilityName}</div>
-          <div class="meta">${CB.formatDate(upcoming.date)} &middot; ${CB.formatTime12(upcoming.startTime)} - ${CB.formatTime12(upcoming.endTime)}</div>
-          <span class="badge ${CB.statusBadgeClass(upcoming.status)}" style="margin-top:10px;">${upcoming.status}</span>
-        </div>
-        <a href="my-bookings.html" class="btn btn-outline">View Booking</a>
-      </div>`;
-  } else {
-    upcomingWrap.innerHTML = `
-      <div class="empty-state">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-        <h3>No upcoming bookings</h3>
-        <p>Browse facilities and reserve your next slot.</p>
-      </div>`;
-  }
+    if (!user) {
+        window.location.href = "../login.html";
+        return;
+    }
 
-  const recWrap = document.getElementById("recommendedGrid");
-  const facilities = CB.Data.getFacilities().filter((f) => f.status === "Active" && f.availability === "Available").slice(0, 3);
-  recWrap.innerHTML = facilities.map(renderFacilityCard).join("");
+    // Greeting
+    const hour = new Date().getHours();
+
+    const greeting =
+        hour < 12
+            ? "Good Morning"
+            : hour < 17
+                ? "Good Afternoon"
+                : "Good Evening";
+
+    document.getElementById("greetingText").textContent =
+        `${greeting}, ${user.name.split(" ")[0]} 👋`;
+
+    try {
+
+        // Get user's bookings
+        const bookingResponse = await fetch(
+            `http://localhost:3000/my-bookings/${user.user_id}`
+        );
+
+        const bookings = await bookingResponse.json();
+
+        if (!bookingResponse.ok) {
+            throw new Error("Unable to load bookings");
+        }
+
+        // Statistics
+        const total = bookings.length;
+
+        const pending = bookings.filter(
+            b => b.status === "pending"
+        ).length;
+
+        const approved = bookings.filter(
+            b => b.status === "approved"
+        ).length;
+
+        const cancelled = bookings.filter(
+            b => b.status === "cancelled"
+        ).length;
+
+        document.getElementById("statTotal").textContent = total;
+        document.getElementById("statPending").textContent = pending;
+        document.getElementById("statApproved").textContent = approved;
+        document.getElementById("statCancelled").textContent = cancelled;
+
+
+        // Upcoming booking
+        const upcomingWrap =
+            document.getElementById("upcomingWrap");
+
+        const upcoming = bookings
+            .filter(
+                b =>
+                    b.status === "pending" ||
+                    b.status === "approved"
+            )
+            .sort(
+                (a, b) =>
+                    new Date(a.date) - new Date(b.date)
+            )[0];
+
+
+        if (upcoming) {
+
+            upcomingWrap.innerHTML = `
+                <div class="upcoming-card">
+
+                    <div>
+
+                        <div class="facility-name">
+                            ${upcoming.facility_name}
+                        </div>
+
+                        <div class="meta">
+                            ${formatDashboardDate(upcoming.date)}
+                            ·
+                            ${upcoming.start_time}
+                            -
+                            ${upcoming.end_time}
+                        </div>
+
+                        <span class="badge">
+                            ${upcoming.status}
+                        </span>
+
+                    </div>
+
+                    <a href="my-bookings.html"
+                       class="btn btn-outline">
+                        View Booking
+                    </a>
+
+                </div>
+            `;
+
+        } else {
+
+            upcomingWrap.innerHTML = `
+                <div class="empty-state">
+
+                    <h3>No upcoming bookings</h3>
+
+                    <p>
+                        Browse facilities and reserve your next slot.
+                    </p>
+
+                </div>
+            `;
+        }
+
+
+        // Load recommended facilities
+        const facilityResponse =
+            await fetch("http://localhost:3000/facilities");
+
+        const facilities =
+            await facilityResponse.json();
+
+
+        const recommended =
+            facilities
+                .filter(
+                    f =>
+                        f.status === "active" &&
+                        f.availability === "available"
+                )
+                .slice(0, 3);
+
+
+        const recWrap =
+            document.getElementById("recommendedGrid");
+
+
+        recWrap.innerHTML =
+            recommended.map(f => `
+
+                <div class="facility-card">
+
+                    <div class="facility-media">
+                        🏫
+                    </div>
+
+                    <div class="facility-body">
+
+                        <h3>${f.name}</h3>
+
+                        <div class="facility-meta">
+
+                            <span>
+                                📍 ${f.location}
+                            </span>
+
+                            <span>
+                                👥 Capacity: ${f.capacity}
+                            </span>
+
+                            <span>
+                                🏷️ ${f.category}
+                            </span>
+
+                        </div>
+
+                        <span class="badge ok">
+                            Available
+                        </span>
+
+                        <div class="facility-actions">
+
+                            <a
+                                href="../facility-details.html?id=${f.facility_id}"
+                                class="btn btn-primary">
+                                View Facility
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `).join("");
+
+
+    } catch (error) {
+
+        console.error("Dashboard error:", error);
+
+        document.getElementById("upcomingWrap").innerHTML = `
+            <div class="empty-state">
+
+                <h3>Unable to load dashboard</h3>
+
+                <p>
+                    Please make sure the server is running.
+                </p>
+
+            </div>
+        `;
+    }
+}
+
+function formatDashboardDate(date) {
+
+    const d = new Date(date);
+
+    return d.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
 }
 
 /* ---------------- My Bookings ---------------- */

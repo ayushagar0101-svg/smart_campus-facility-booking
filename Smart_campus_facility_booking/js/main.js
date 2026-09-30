@@ -260,187 +260,187 @@ function renderFacilityCard(f) {
     </div>`;
 }
 
-function initFacilitiesPage() {
-  const grid = document.getElementById("facilityGrid");
-  if (!grid) return;
-  const facilities = CB.Data.getFacilities().filter((f) => f.status === "Active");
-  const searchInput = document.getElementById("searchInput");
-  const categoryFilter = document.getElementById("categoryFilter");
-  const locationFilter = document.getElementById("locationFilter");
-  const availabilityFilter = document.getElementById("availabilityFilter");
-  const resultCount = document.getElementById("resultCount");
-  const emptyState = document.getElementById("emptyState");
+// function initFacilitiesPage() {
+//   const grid = document.getElementById("facilityGrid");
+//   if (!grid) return;
+//   const facilities = CB.Data.getFacilities().filter((f) => f.status === "Active");
+//   const searchInput = document.getElementById("searchInput");
+//   const categoryFilter = document.getElementById("categoryFilter");
+//   const locationFilter = document.getElementById("locationFilter");
+//   const availabilityFilter = document.getElementById("availabilityFilter");
+//   const resultCount = document.getElementById("resultCount");
+//   const emptyState = document.getElementById("emptyState");
 
-  // populate location filter dynamically
-  const locations = [...new Set(facilities.map((f) => f.location))];
-  locations.forEach((loc) => {
-    const opt = document.createElement("option");
-    opt.value = loc;
-    opt.textContent = loc;
-    locationFilter.appendChild(opt);
-  });
+//   // populate location filter dynamically
+//   const locations = [...new Set(facilities.map((f) => f.location))];
+//   locations.forEach((loc) => {
+//     const opt = document.createElement("option");
+//     opt.value = loc;
+//     opt.textContent = loc;
+//     locationFilter.appendChild(opt);
+//   });
 
-  // preselect category from query string (from landing page links)
-  const params = new URLSearchParams(window.location.search);
-  const initialCategory = params.get("category");
-  if (initialCategory) categoryFilter.value = initialCategory;
+//   // preselect category from query string (from landing page links)
+//   const params = new URLSearchParams(window.location.search);
+//   const initialCategory = params.get("category");
+//   if (initialCategory) categoryFilter.value = initialCategory;
 
-  function apply() {
-    const q = searchInput.value.trim().toLowerCase();
-    const cat = categoryFilter.value;
-    const loc = locationFilter.value;
-    const avail = availabilityFilter.value;
+//   function apply() {
+//     const q = searchInput.value.trim().toLowerCase();
+//     const cat = categoryFilter.value;
+//     const loc = locationFilter.value;
+//     const avail = availabilityFilter.value;
 
-    const filtered = facilities.filter((f) => {
-      if (q && !f.name.toLowerCase().includes(q) && !f.location.toLowerCase().includes(q)) return false;
-      if (cat && f.category !== cat) return false;
-      if (loc && f.location !== loc) return false;
-      if (avail && f.availability !== avail) return false;
-      return true;
-    });
+//     const filtered = facilities.filter((f) => {
+//       if (q && !f.name.toLowerCase().includes(q) && !f.location.toLowerCase().includes(q)) return false;
+//       if (cat && f.category !== cat) return false;
+//       if (loc && f.location !== loc) return false;
+//       if (avail && f.availability !== avail) return false;
+//       return true;
+//     });
 
-    grid.innerHTML = filtered.map(renderFacilityCard).join("");
-    resultCount.textContent = `${filtered.length} facilit${filtered.length === 1 ? "y" : "ies"} found`;
-    emptyState.style.display = filtered.length === 0 ? "block" : "none";
-    grid.style.display = filtered.length === 0 ? "none" : "grid";
-  }
+//     grid.innerHTML = filtered.map(renderFacilityCard).join("");
+//     resultCount.textContent = `${filtered.length} facilit${filtered.length === 1 ? "y" : "ies"} found`;
+//     emptyState.style.display = filtered.length === 0 ? "block" : "none";
+//     grid.style.display = filtered.length === 0 ? "none" : "grid";
+//   }
 
-  [searchInput, categoryFilter, locationFilter, availabilityFilter].forEach((el) => {
-    el.addEventListener("input", apply);
-    el.addEventListener("change", apply);
-  });
+//   [searchInput, categoryFilter, locationFilter, availabilityFilter].forEach((el) => {
+//     el.addEventListener("input", apply);
+//     el.addEventListener("change", apply);
+//   });
 
-  apply();
-}
+//   apply();
+// }
 
-function initFacilityDetailsPage() {
-  const root = document.getElementById("detailsRoot");
-  if (!root) return;
-  const params = new URLSearchParams(window.location.search);
-  const id = params.get("id");
-  const facility = CB.Data.getFacilities().find((f) => f.id === id) || CB.Data.getFacilities()[0];
+// function initFacilityDetailsPage() {
+//   const root = document.getElementById("detailsRoot");
+//   if (!root) return;
+//   const params = new URLSearchParams(window.location.search);
+//   const id = params.get("id");
+//   const facility = CB.Data.getFacilities().find((f) => f.id === id) || CB.Data.getFacilities()[0];
 
-  document.title = `${facility.name} — CampusBook`;
-  document.getElementById("facName").textContent = facility.name;
-  document.getElementById("facDesc").textContent = facility.description;
-  document.getElementById("facCategory").textContent = facility.category;
-  document.getElementById("facLocation").textContent = facility.location;
-  document.getElementById("facCapacity").textContent = facility.capacity;
-  document.getElementById("facHoursOpen").textContent = CB.formatTime12(facility.openTime);
-  document.getElementById("facHoursClose").textContent = CB.formatTime12(facility.closeTime);
-  const equipWrap = document.getElementById("facEquipment");
-  equipWrap.innerHTML = facility.equipment.map((e) => `<span class="equip-chip">${e}</span>`).join("");
-  const media = document.getElementById("facMedia");
-  media.classList.add(`icon-${CB.catClass(facility.category)}`);
-  media.innerHTML = CB.categoryIconSvg(facility.category);
-  const badge = document.getElementById("facAvailBadge");
-  const availClass = facility.availability === "Available" ? "ok" : facility.availability === "Booked" ? "warn" : "neutral";
-  badge.className = `badge ${availClass}`;
-  badge.innerHTML = facility.availability;
+//   document.title = `${facility.name} — CampusBook`;
+//   document.getElementById("facName").textContent = facility.name;
+//   document.getElementById("facDesc").textContent = facility.description;
+//   document.getElementById("facCategory").textContent = facility.category;
+//   document.getElementById("facLocation").textContent = facility.location;
+//   document.getElementById("facCapacity").textContent = facility.capacity;
+//   document.getElementById("facHoursOpen").textContent = CB.formatTime12(facility.openTime);
+//   document.getElementById("facHoursClose").textContent = CB.formatTime12(facility.closeTime);
+//   const equipWrap = document.getElementById("facEquipment");
+//   equipWrap.innerHTML = facility.equipment.map((e) => `<span class="equip-chip">${e}</span>`).join("");
+//   const media = document.getElementById("facMedia");
+//   media.classList.add(`icon-${CB.catClass(facility.category)}`);
+//   media.innerHTML = CB.categoryIconSvg(facility.category);
+//   const badge = document.getElementById("facAvailBadge");
+//   const availClass = facility.availability === "Available" ? "ok" : facility.availability === "Booked" ? "warn" : "neutral";
+//   badge.className = `badge ${availClass}`;
+//   badge.innerHTML = facility.availability;
 
-  document.getElementById("bookingFacilityId").value = facility.id;
+//   document.getElementById("bookingFacilityId").value = facility.id;
 
-  const checkBtn = document.getElementById("checkAvailabilityBtn");
-  const confirmBtn = document.getElementById("confirmBookingBtn");
-  const resultBox = document.getElementById("availabilityResult");
-  const confirmedBox = document.getElementById("bookingConfirmed");
+//   const checkBtn = document.getElementById("checkAvailabilityBtn");
+//   const confirmBtn = document.getElementById("confirmBookingBtn");
+//   const resultBox = document.getElementById("availabilityResult");
+//   const confirmedBox = document.getElementById("bookingConfirmed");
 
-  checkBtn.addEventListener("click", () => {
-    const date = document.getElementById("bookDate").value;
-    const start = document.getElementById("bookStart").value;
-    const end = document.getElementById("bookEnd").value;
-    const purpose = document.getElementById("bookPurpose").value.trim();
+//   checkBtn.addEventListener("click", () => {
+//     const date = document.getElementById("bookDate").value;
+//     const start = document.getElementById("bookStart").value;
+//     const end = document.getElementById("bookEnd").value;
+//     const purpose = document.getElementById("bookPurpose").value.trim();
 
-    if (!date || !start || !end || !purpose) {
-      resultBox.className = "badge danger";
-      resultBox.style.display = "inline-flex";
-      resultBox.textContent = "✕ Please fill in date, time and purpose first.";
-      confirmBtn.style.display = "none";
-      return;
-    }
-    if (start >= end) {
-      resultBox.className = "badge danger";
-      resultBox.style.display = "inline-flex";
-      resultBox.textContent = "✕ End time must be after start time.";
-      confirmBtn.style.display = "none";
-      return;
-    }
+//     if (!date || !start || !end || !purpose) {
+//       resultBox.className = "badge danger";
+//       resultBox.style.display = "inline-flex";
+//       resultBox.textContent = "✕ Please fill in date, time and purpose first.";
+//       confirmBtn.style.display = "none";
+//       return;
+//     }
+//     if (start >= end) {
+//       resultBox.className = "badge danger";
+//       resultBox.style.display = "inline-flex";
+//       resultBox.textContent = "✕ End time must be after start time.";
+//       confirmBtn.style.display = "none";
+//       return;
+//     }
 
-    // check clashing bookings for same facility/date/time (demo logic)
-    const bookings = CB.Data.getBookings();
-    const clash = bookings.some((b) =>
-      b.facilityId === facility.id &&
-      b.date === date &&
-      b.status !== "Rejected" && b.status !== "Cancelled" &&
-      start < b.endTime && end > b.startTime
-    );
+//     // check clashing bookings for same facility/date/time (demo logic)
+//     const bookings = CB.Data.getBookings();
+//     const clash = bookings.some((b) =>
+//       b.facilityId === facility.id &&
+//       b.date === date &&
+//       b.status !== "Rejected" && b.status !== "Cancelled" &&
+//       start < b.endTime && end > b.startTime
+//     );
 
-    if (clash || facility.availability === "Maintenance") {
-      resultBox.className = "badge danger";
-      resultBox.style.display = "inline-flex";
-      resultBox.textContent = "✕ Facility is not available at this time.";
-      confirmBtn.style.display = "none";
-    } else {
-      resultBox.className = "badge ok";
-      resultBox.style.display = "inline-flex";
-      resultBox.textContent = "✓ Facility is available";
-      confirmBtn.style.display = "inline-flex";
-    }
-  });
+//     if (clash || facility.availability === "Maintenance") {
+//       resultBox.className = "badge danger";
+//       resultBox.style.display = "inline-flex";
+//       resultBox.textContent = "✕ Facility is not available at this time.";
+//       confirmBtn.style.display = "none";
+//     } else {
+//       resultBox.className = "badge ok";
+//       resultBox.style.display = "inline-flex";
+//       resultBox.textContent = "✓ Facility is available";
+//       confirmBtn.style.display = "inline-flex";
+//     }
+//   });
 
-  confirmBtn.addEventListener("click", () => {
-    const session = CB.Data.getSession();
-    if (!session) {
-      CB.toast("Please log in to confirm a booking.", "warn");
-      window.location.href = `login.html?redirect=facility-details.html?id=${facility.id}`;
-      return;
-    }
-    const date = document.getElementById("bookDate").value;
-    const start = document.getElementById("bookStart").value;
-    const end = document.getElementById("bookEnd").value;
-    const purpose = document.getElementById("bookPurpose").value.trim();
-    const participants = document.getElementById("bookParticipants").value || 1;
+//   confirmBtn.addEventListener("click", () => {
+//     const session = CB.Data.getSession();
+//     if (!session) {
+//       CB.toast("Please log in to confirm a booking.", "warn");
+//       window.location.href = `login.html?redirect=facility-details.html?id=${facility.id}`;
+//       return;
+//     }
+//     const date = document.getElementById("bookDate").value;
+//     const start = document.getElementById("bookStart").value;
+//     const end = document.getElementById("bookEnd").value;
+//     const purpose = document.getElementById("bookPurpose").value.trim();
+//     const participants = document.getElementById("bookParticipants").value || 1;
 
-    const booking = {
-      id: CB.nextBookingId(),
-      userId: session.id,
-      userName: session.name,
-      facilityId: facility.id,
-      facilityName: facility.name,
-      date, startTime: start, endTime: end, purpose,
-      participants: Number(participants),
-      status: "Pending",
-      createdAt: new Date().toISOString(),
-    };
-    const bookings = CB.Data.getBookings();
-    bookings.push(booking);
-    CB.Data.saveBookings(bookings);
+//     const booking = {
+//       id: CB.nextBookingId(),
+//       userId: session.id,
+//       userName: session.name,
+//       facilityId: facility.id,
+//       facilityName: facility.name,
+//       date, startTime: start, endTime: end, purpose,
+//       participants: Number(participants),
+//       status: "Pending",
+//       createdAt: new Date().toISOString(),
+//     };
+//     const bookings = CB.Data.getBookings();
+//     bookings.push(booking);
+//     CB.Data.saveBookings(bookings);
 
-    const notifications = CB.Data.getNotifications();
-    notifications.unshift({
-      id: "N" + Date.now(),
-      userId: session.id,
-      type: "pending",
-      message: `Your booking request for ${facility.name} is pending approval.`,
-      read: false,
-      createdAt: new Date().toISOString(),
-    });
-    CB.Data.saveNotifications(notifications);
+//     const notifications = CB.Data.getNotifications();
+//     notifications.unshift({
+//       id: "N" + Date.now(),
+//       userId: session.id,
+//       type: "pending",
+//       message: `Your booking request for ${facility.name} is pending approval.`,
+//       read: false,
+//       createdAt: new Date().toISOString(),
+//     });
+//     CB.Data.saveNotifications(notifications);
 
-    document.getElementById("bookingForm").style.display = "none";
-    confirmedBox.style.display = "block";
-    confirmedBox.innerHTML = `
-      <h3>Booking Confirmed!</h3>
-      <div class="hours-row"><span>Booking ID</span><strong>${booking.id}</strong></div>
-      <div class="hours-row"><span>Facility</span><strong>${facility.name}</strong></div>
-      <div class="hours-row"><span>Date</span><strong>${CB.formatDate(date)}</strong></div>
-      <div class="hours-row"><span>Time</span><strong>${CB.formatTime12(start)} - ${CB.formatTime12(end)}</strong></div>
-      <div class="hours-row"><span>Status</span><span class="badge warn">Pending</span></div>
-      <a href="user/my-bookings.html" class="btn btn-primary btn-block" style="margin-top:18px;">View My Bookings</a>
-    `;
-    CB.toast("Booking request submitted successfully.", "ok");
-  });
-}
+//     document.getElementById("bookingForm").style.display = "none";
+//     confirmedBox.style.display = "block";
+//     confirmedBox.innerHTML = `
+//       <h3>Booking Confirmed!</h3>
+//       <div class="hours-row"><span>Booking ID</span><strong>${booking.id}</strong></div>
+//       <div class="hours-row"><span>Facility</span><strong>${facility.name}</strong></div>
+//       <div class="hours-row"><span>Date</span><strong>${CB.formatDate(date)}</strong></div>
+//       <div class="hours-row"><span>Time</span><strong>${CB.formatTime12(start)} - ${CB.formatTime12(end)}</strong></div>
+//       <div class="hours-row"><span>Status</span><span class="badge warn">Pending</span></div>
+//       <a href="user/my-bookings.html" class="btn btn-primary btn-block" style="margin-top:18px;">View My Bookings</a>
+//     `;
+//     CB.toast("Booking request submitted successfully.", "ok");
+//   });
+// }
 
 /* ---------------- Login / Register simulation ---------------- */
 function initLoginPage() {
@@ -530,8 +530,8 @@ function clearFieldError(inputId) {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  initFacilitiesPage();
-  initFacilityDetailsPage();
+  // initFacilitiesPage();
+  // initFacilityDetailsPage();
   initLoginPage();
   initRegisterPage();
 });

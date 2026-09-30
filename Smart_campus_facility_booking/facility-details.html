@@ -156,18 +156,24 @@ async function loadFacility() {
 
     try {
 
-        const response =
-            await fetch(`http://localhost:3000/facility/${facilityId}`);
+        console.log("Trying to load facility:", facilityId);
+
+        const response = await fetch(
+            `http://localhost:3000/facility/${facilityId}`
+        );
+
+        console.log("Response status:", response.status);
 
         const facility = await response.json();
 
+        console.log("Facility data:", facility);
+
         if (!response.ok) {
-            throw new Error(facility.message);
+            throw new Error(facility.message || "Facility not found");
         }
 
         currentFacility = facility;
 
-        // Display facility information
         facName.textContent = facility.name;
 
         facDesc.textContent =
@@ -194,19 +200,17 @@ async function loadFacility() {
         bookingFacilityId.value =
             facility.facility_id;
 
-        // Set maximum participants
         if (facility.capacity) {
             bookParticipants.max = facility.capacity;
         }
 
     } catch (error) {
 
-        console.log(error);
+        console.error("FACILITY ERROR:", error);
 
-        alert("Unable to load facility.");
+        alert("Unable to load facility: " + error.message);
     }
 }
-
 
 // Check availability
 checkAvailabilityBtn.addEventListener("click", async function() {

@@ -66,12 +66,290 @@
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" data-close-modal>Keep Booking</button>
-      <button class="btn btn-danger" id="cancelConfirmBtn">Cancel Booking</button>
+      <button
+    type="button"
+    class="btn btn-danger"
+    id="cancelConfirmBtn"
+    onclick="alert('CANCEL BUTTON WORKS')">
+    Cancel Booking
+</button>
     </div>
   </div>
 </div>
 
 <script src="../js/main.js"></script>
 <script src="../js/user.js"></script>
+
+<script>
+
+const user = JSON.parse(localStorage.getItem("user"));
+
+if (!user) {
+
+    alert("Please login first.");
+    window.location.href = "../login.html";
+
+} else {
+
+    const userId = user.user_id;
+
+    const bookingsTableBody =
+        document.getElementById("bookingsTableBody");
+
+    const bookingsTableWrap =
+        document.getElementById("bookingsTableWrap");
+
+    const bookingsEmpty =
+        document.getElementById("bookingsEmpty");
+
+
+    // Cancel modal
+    const cancelModal =
+        document.getElementById("cancelModal");
+
+    const cancelConfirmBtn =
+        document.getElementById("cancelConfirmBtn");
+
+    let selectedBookingId = null;
+
+
+    // ==============================
+    // LOAD MY BOOKINGS
+    // ==============================
+
+    async function loadMyBookings() {
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/my-bookings/${userId}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load bookings");
+            }
+
+            const bookings = await response.json();
+
+            bookingsTableBody.innerHTML = "";
+
+
+            if (bookings.length === 0) {
+
+                bookingsTableWrap.style.display = "none";
+                bookingsEmpty.style.display = "block";
+
+                return;
+            }
+
+
+            bookingsTableWrap.style.display = "block";
+            bookingsEmpty.style.display = "none";
+
+
+            bookings.forEach(booking => {
+
+                const row = document.createElement("tr");
+
+
+                row.innerHTML = `
+
+                    <td>
+                        #${booking.booking_id}
+                    </td>
+
+                    <td>
+                        <strong>${booking.facility_name}</strong>
+                        <br>
+                        <small>${booking.location}</small>
+                    </td>
+
+                    <td>
+                        ${formatDate(booking.date)}
+                    </td>
+
+                    <td>
+                        ${booking.start_time} -
+                        ${booking.end_time}
+                    </td>
+
+                    <td>
+                        ${booking.purpose}
+                    </td>
+
+                    <td>
+                        <span class="status-badge ${booking.status.toLowerCase()}">
+                            ${booking.status}
+                        </span>
+                    </td>
+
+                    <td>
+
+                        ${
+                            booking.status.toLowerCase() === "cancelled"
+
+                            ? "Cancelled"
+
+                            : `
+                                <button
+                                    class="btn btn-danger cancel-booking-btn"
+                                    data-id="${booking.booking_id}">
+                                    Cancel
+                                </button>
+                            `
+                        }
+
+                    </td>
+
+                `;
+
+                bookingsTableBody.appendChild(row);
+
+            });
+
+
+        } catch (error) {
+
+            console.log(error);
+
+            bookingsTableWrap.style.display = "none";
+            bookingsEmpty.style.display = "block";
+
+        }
+
+    }
+
+
+    // ==============================
+    // OPEN CANCEL MODAL
+    // ==============================
+
+    document.addEventListener("click", function(e) {
+
+        if (!e.target.classList.contains("cancel-booking-btn")) {
+            return;
+        }
+
+
+        selectedBookingId = e.target.dataset.id;
+
+
+        // Show modal
+        cancelModal.classList.add("show");
+
+    });
+
+
+    // ==============================
+    // CLOSE CANCEL MODAL
+    // ==============================
+
+    document.querySelectorAll("[data-close-modal]")
+        .forEach(button => {
+
+            button.addEventListener("click", function() {
+
+                cancelModal.classList.remove("show");
+
+                selectedBookingId = null;
+
+            });
+
+        });
+
+
+    // ==============================
+    // CONFIRM CANCEL
+    // ==============================
+
+    cancelConfirmBtn.addEventListener("click", async function() {
+      console.log("CANCEL BUTTON CLICKED");
+
+        if (!selectedBookingId) {
+            return;
+        }
+
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/booking/${selectedBookingId}/cancel`,
+                {
+                    method: "PATCH",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        user_id: userId
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (response.ok) {
+
+                // Close modal
+                cancelModal.classList.remove("show");
+
+                selectedBookingId = null;
+
+
+                // Reload bookings
+                await loadMyBookings();
+
+
+                alert("Booking cancelled successfully!");
+
+            } else {
+
+                alert(data.message);
+
+            }
+
+
+        } catch (error) {
+
+            console.log(error);
+
+            alert(
+                "Cannot connect to server. Make sure Node.js is running."
+            );
+
+        }
+
+    });
+
+
+    // ==============================
+    // FORMAT DATE
+    // ==============================
+
+    function formatDate(dateString) {
+
+        const date = new Date(dateString);
+
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+
+    }
+
+
+    // ==============================
+    // LOAD BOOKINGS
+    // ==============================
+
+    loadMyBookings();
+
+}
+
+</script>
 </body>
 </html>

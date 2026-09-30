@@ -173,11 +173,20 @@ function displayFacilities(data) {
 
                 <h3>${facility.name}</h3>
 
-                <p>${facility.description || "No description available."}</p>
+                <p>
+                    ${facility.description || "No description available."}
+                </p>
 
                 <div class="facility-info">
-                    <span>📍 ${facility.location || "N/A"}</span>
-                    <span>👥 Capacity: ${facility.capacity || "N/A"}</span>
+
+                    <span>
+                        📍 ${facility.location || "N/A"}
+                    </span>
+
+                    <span>
+                        👥 Capacity: ${facility.capacity || "N/A"}
+                    </span>
+
                 </div>
 
                 <div class="facility-info">
@@ -193,13 +202,20 @@ function displayFacilities(data) {
 
                 </div>
 
+                <a href="facility-details.html?id=${facility.facility_id}"
+                   class="btn btn-primary"
+                   style="margin-top:15px; display:inline-block;">
+
+                    View Details & Book
+
+                </a>
+
             </div>
         `;
 
         facilityGrid.appendChild(card);
     });
 }
-
 
 // Filter facilities
 function filterFacilities() {

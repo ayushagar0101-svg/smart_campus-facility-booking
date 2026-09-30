@@ -399,6 +399,168 @@ app.post("/booking", (req, res) => {
         }
     );
 });
+// my-booking.html
+app.get("/my-bookings/:userId", (req, res) => {
+    const userId = req.params.userId;
+
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.user_id,
+            b.facility_id,
+            f.name AS facility_name,
+            f.location,
+            b.date,
+            b.start_time,
+            b.end_time,
+            b.purpose,
+            b.participants,
+            b.status,
+            b.created_at
+        FROM booking b
+        JOIN facility f
+            ON b.facility_id = f.facility_id
+        WHERE b.user_id = ?
+        ORDER BY b.created_at DESC
+    `;
+
+    db.query(sql, [userId], (err, results) => {
+        if (err) {
+            console.log(err);
+            return res.status(500).json({
+                message: "Database error"
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+app.get("/test", (req, res) => {
+    res.send("TEST ROUTE WORKING");
+});
+console.log("MY UPDATED SERVER.JS IS RUNNING");
+
+// Cancel booking
+app.patch("/booking/:bookingId/cancel", (req, res) => {
+    const bookingId = req.params.bookingId;
+    const { user_id } = req.body;
+
+    if (!user_id) {
+        return res.status(400).json({
+            message: "User ID is required."
+        });
+    }
+
+    const sql = `
+        UPDATE booking
+        SET status = 'cancelled'
+        WHERE booking_id = ?
+        AND user_id = ?
+        AND status IN ('pending', 'approved')
+    `;
+
+    db.query(sql, [bookingId, user_id], (err, result) => {
+
+        if (err) {
+            console.log(err);
+            return res.status(500).json({
+                message: "Database error."
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(400).json({
+                message: "Booking cannot be cancelled."
+            });
+        }
+
+        res.json({
+            message: "Booking cancelled successfully!"
+        });
+    });
+});
+
+// ================= ADMIN: GET ALL BOOKINGS =================
+
+app.get("/admin/bookings", (req, res) => {
+
+    const sql = `
+        SELECT
+            b.booking_id,
+            b.user_id,
+            u.name AS user_name,
+            u.email AS user_email,
+            b.facility_id,
+            f.name AS facility_name,
+            b.date,
+            b.start_time,
+            b.end_time,
+            b.purpose,
+            b.participants,
+            b.status,
+            b.created_at
+        FROM booking b
+        JOIN user u ON b.user_id = u.user_id
+        JOIN facility f ON b.facility_id = f.facility_id
+        ORDER BY b.created_at DESC
+    `;
+
+    db.query(sql, (err, results) => {
+
+        if (err) {
+            console.log(err);
+            return res.status(500).json({
+                message: "Failed to load bookings."
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+// ================= ADMIN: UPDATE BOOKING STATUS =================
+app.patch("/admin/bookings/:bookingId/status", (req, res) => {
+    const bookingId = req.params.bookingId;
+    const { status } = req.body;
+
+    const allowedStatuses = ["approved", "rejected", "cancelled"];
+
+    if (!allowedStatuses.includes(status)) {
+        return res.status(400).json({
+            message: "Invalid booking status."
+        });
+    }
+
+    const sql = `
+        UPDATE booking
+        SET status = ?
+        WHERE booking_id = ?
+        AND status = 'pending'
+    `;
+
+    db.query(sql, [status, bookingId], (err, result) => {
+
+        if (err) {
+            console.log(err);
+
+            return res.status(500).json({
+                message: "Failed to update booking status."
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(400).json({
+                message: "Booking cannot be updated."
+            });
+        }
+
+        res.json({
+            message: `Booking ${status} successfully!`
+        });
+    });
+});
+
 app.listen(3000, () => {
     console.log("Server running at http://localhost:3000");
 });

@@ -327,44 +327,219 @@ function initAdminUsers() {
 }
 
 /* ---------------- All Bookings (oversight) ---------------- */
+/* ---------------- All Bookings (oversight) ---------------- */
 function initAdminBookings() {
-  const tbody = document.getElementById("allBookingsTableBody");
-  if (!tbody) return;
-  const searchInput = document.getElementById("bookingSearch");
-  const statusFilter = document.getElementById("bookingStatusFilter");
+    const tbody = document.getElementById("allBookingsTableBody");
+    if (!tbody) return;
 
-  function render() {
-    const q = (searchInput.value || "").toLowerCase();
-    const status = statusFilter.value;
-    let bookings = CB.Data.getBookings().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    bookings = bookings.filter((b) => {
-      if (q && !b.userName.toLowerCase().includes(q) && !b.facilityName.toLowerCase().includes(q) && !b.id.toLowerCase().includes(q)) return false;
-      if (status && b.status !== status) return false;
-      return true;
-    });
+    const searchInput = document.getElementById("bookingSearch");
+    const statusFilter = document.getElementById("bookingStatusFilter");
 
-    if (bookings.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="7"><div class="admin-empty">No bookings match your search.</div></td></tr>`;
-      return;
+    let allBookings = [];
+
+    async function loadBookings() {
+        try {
+            const response = await fetch("http://localhost:3000/admin/bookings");
+
+            if (!response.ok) {
+                throw new Error("Failed to load bookings");
+            }
+
+            allBookings = await response.json();
+            render();
+
+        } catch (error) {
+            console.error("Error loading bookings:", error);
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8">
+                        <div class="admin-empty">
+                            Unable to load bookings.
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
     }
 
-    tbody.innerHTML = bookings.map((b) => {
-      const badgeClass = b.status === "Approved" ? "ok" : b.status === "Pending" ? "warn" : b.status === "Rejected" ? "danger" : "neutral";
-      return `<tr>
-        <td class="mono">${b.id}</td>
-        <td>${b.userName}</td>
-        <td>${b.facilityName}</td>
-        <td>${CB.formatDate(b.date)}</td>
-        <td>${CB.formatTime12(b.startTime)} - ${CB.formatTime12(b.endTime)}</td>
-        <td>${b.purpose}</td>
-        <td><span class="adm-badge ${badgeClass}">${b.status}</span></td>
-      </tr>`;
-    }).join("");
-  }
+    function render() {
+        const q = (searchInput.value || "").toLowerCase();
+        const status = statusFilter.value.toLowerCase();
 
-  searchInput.addEventListener("input", render);
-  statusFilter.addEventListener("change", render);
-  render();
+        let bookings = allBookings.filter((b) => {
+
+            const bookingId = String(b.booking_id).toLowerCase();
+            const userName = (b.user_name || "").toLowerCase();
+            const facilityName = (b.facility_name || "").toLowerCase();
+
+            const matchesSearch =
+                !q ||
+                bookingId.includes(q) ||
+                userName.includes(q) ||
+                facilityName.includes(q);
+
+            const matchesStatus =
+                !status ||
+                (b.status || "").toLowerCase() === status;
+
+            return matchesSearch && matchesStatus;
+        });
+
+        if (bookings.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="8">
+                        <div class="admin-empty">
+                            No bookings match your search.
+                        </div>
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        tbody.innerHTML = bookings.map((b) => {
+
+            let badgeClass = "neutral";
+
+            if (b.status === "approved") {
+                badgeClass = "ok";
+            } else if (b.status === "pending") {
+                badgeClass = "warn";
+            } else if (
+                b.status === "rejected" ||
+                b.status === "cancelled"
+            ) {
+                badgeClass = "danger";
+            }
+
+            return `
+                <tr>
+                    <td class="mono">${b.booking_id}</td>
+
+                    <td>
+                        ${b.user_name}
+                        <br>
+                        <small>${b.user_email}</small>
+                    </td>
+
+                    <td>${b.facility_name}</td>
+
+                    <td>${formatAdminDate(b.date)}</td>
+
+                    <td>
+                        ${b.start_time} - ${b.end_time}
+                    </td>
+
+                    <td>${b.purpose || "—"}</td>
+
+                    <td>
+                        <span class="adm-badge ${badgeClass}">
+                            ${b.status}
+                        </span>
+                    </td>
+
+                    <td>
+                        ${
+                            b.status === "pending"
+                            ? `
+                                <div class="adm-btn-row">
+                                    <button
+                                        class="adm-btn approve"
+                                        data-booking-id="${b.booking_id}"
+                                        data-action="approved">
+                                        Approve
+                                    </button>
+
+                                    <button
+                                        class="adm-btn reject"
+                                        data-booking-id="${b.booking_id}"
+                                        data-action="rejected">
+                                        Reject
+                                    </button>
+                                </div>
+                            `
+                            : `<span class="mono">Reviewed</span>`
+                        }
+                    </td>
+                </tr>
+            `;
+
+        }).join("");
+    }
+
+    /* Approve / Reject button */
+    tbody.addEventListener("click", async (e) => {
+
+        const button = e.target.closest("[data-action]");
+
+        if (!button) return;
+
+        const bookingId = button.dataset.bookingId;
+        const action = button.dataset.action;
+
+        const actionText =
+            action === "approved" ? "approve" : "reject";
+
+        const confirmed = confirm(
+            `Are you sure you want to ${actionText} booking #${bookingId}?`
+        );
+
+        if (!confirmed) return;
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/admin/bookings/${bookingId}/status`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        status: action
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || "Failed to update booking.");
+                return;
+            }
+
+            alert(data.message);
+
+            // Reload bookings after approval/rejection
+            loadBookings();
+
+        } catch (error) {
+
+            console.error(error);
+
+            alert("Unable to connect to server.");
+        }
+    });
+
+    searchInput.addEventListener("input", render);
+    statusFilter.addEventListener("change", render);
+
+    loadBookings();
+}
+
+
+
+/* Format MySQL date for Admin page */
+function formatAdminDate(dateString) {
+    const date = new Date(dateString);
+
+    return date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric"
+    });
 }
 
 /* ---------------- Reports ---------------- */
