@@ -345,154 +345,566 @@ function initModalCloseButtons() {
 
 /* ---------------- Booking History ---------------- */
 function initBookingHistory() {
-  const tbody = document.getElementById("historyTableBody");
-  if (!tbody) return;
-  let activeFilter = "All";
+    const tbody = document.getElementById("historyTableBody");
+    const emptyState = document.getElementById("historyEmpty");
+    const tableWrap = document.getElementById("historyTableWrap");
+    const filterButtons = document.querySelectorAll(".filter-pills button");
 
-  function render() {
-    let bookings = currentUserBookings();
-    if (activeFilter !== "All") bookings = bookings.filter((b) => b.status === activeFilter);
+    if (!tbody) return;
 
-    if (bookings.length === 0) {
-      document.getElementById("historyEmpty").style.display = "block";
-      document.getElementById("historyTableWrap").style.display = "none";
-      return;
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+        alert("Please login first.");
+        window.location.href = "../login.html";
+        return;
     }
-    document.getElementById("historyEmpty").style.display = "none";
-    document.getElementById("historyTableWrap").style.display = "block";
 
-    tbody.innerHTML = bookings.map((b) => `
-      <tr>
-        <td class="mono">${b.id}</td>
-        <td>${b.facilityName}</td>
-        <td>${CB.formatDate(b.date)}</td>
-        <td>${CB.formatTime12(b.startTime)} - ${CB.formatTime12(b.endTime)}</td>
-        <td><span class="badge ${CB.statusBadgeClass(b.status)}">${b.status}</span></td>
-      </tr>`).join("");
-  }
+    const userId = user.user_id;
 
-  document.querySelectorAll(".filter-pills button").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document.querySelectorAll(".filter-pills button").forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      activeFilter = btn.dataset.filter;
-      render();
+    let allBookings = [];
+    let activeFilter = "All";
+
+    async function loadHistory() {
+        try {
+            const response = await fetch(
+                `http://localhost:3000/my-bookings/${userId}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load booking history");
+            }
+
+            allBookings = await response.json();
+
+            renderHistory();
+
+        } catch (error) {
+
+            console.error("Error loading booking history:", error);
+
+            tableWrap.style.display = "none";
+            emptyState.style.display = "block";
+
+            emptyState.querySelector("h3").textContent =
+                "Unable to load booking history";
+
+            emptyState.querySelector("p").textContent =
+                "Please make sure the server is running.";
+
+        }
+    }
+
+    function renderHistory() {
+
+        let historyBookings = allBookings.filter(
+            booking =>
+                booking.status === "approved" ||
+                booking.status === "rejected" ||
+                booking.status === "cancelled"
+        );
+
+        if (activeFilter !== "All") {
+            historyBookings = historyBookings.filter(
+                booking =>
+                    booking.status.toLowerCase() ===
+                    activeFilter.toLowerCase()
+            );
+        }
+
+        if (historyBookings.length === 0) {
+
+            tbody.innerHTML = "";
+
+            tableWrap.style.display = "none";
+            emptyState.style.display = "block";
+
+            emptyState.querySelector("h3").textContent =
+                "Nothing here yet";
+
+            emptyState.querySelector("p").textContent =
+                "Try a different filter.";
+
+            return;
+        }
+
+        tableWrap.style.display = "block";
+        emptyState.style.display = "none";
+
+        tbody.innerHTML = historyBookings.map(booking => {
+
+            let badgeClass = "neutral";
+
+            if (booking.status === "approved") {
+                badgeClass = "ok";
+            }
+
+            if (booking.status === "rejected") {
+                badgeClass = "danger";
+            }
+
+            if (booking.status === "cancelled") {
+                badgeClass = "neutral";
+            }
+
+            return `
+                <tr>
+
+                    <td class="mono">
+                        #${booking.booking_id}
+                    </td>
+
+                    <td>
+                        ${booking.facility_name || "—"}
+                    </td>
+
+                    <td>
+                        ${formatHistoryDate(booking.date)}
+                    </td>
+
+                    <td>
+                        ${booking.start_time || "—"}
+                        -
+                        ${booking.end_time || "—"}
+                    </td>
+
+                    <td>
+                        <span class="status-badge ${badgeClass}">
+                            ${capitalizeStatus(booking.status)}
+                        </span>
+                    </td>
+
+                </tr>
+            `;
+
+        }).join("");
+    }
+
+    filterButtons.forEach(button => {
+
+        button.addEventListener("click", () => {
+
+            filterButtons.forEach(btn => {
+                btn.classList.remove("active");
+            });
+
+            button.classList.add("active");
+
+            activeFilter = button.dataset.filter;
+
+            renderHistory();
+        });
+
     });
-  });
 
-  render();
+    function formatHistoryDate(dateString) {
+
+        if (!dateString) return "—";
+
+        const date = new Date(dateString);
+
+        return date.toLocaleDateString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric"
+        });
+    }
+
+    function capitalizeStatus(status) {
+
+        if (!status) return "Unknown";
+
+        return status.charAt(0).toUpperCase() +
+               status.slice(1);
+    }
+
+    loadHistory();
 }
 
 /* ---------------- Notifications ---------------- */
 function initNotifications() {
-  const wrap = document.getElementById("notificationsWrap");
-  if (!wrap) return;
-  const session = CB.Data.getSession();
 
-  function iconFor(type) {
-    const icons = {
-      success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>',
-      pending: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>',
-      danger: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
-      neutral: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>',
-      info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v4h1"/></svg>',
-    };
-    return icons[type] || icons.info;
-  }
+    const notificationsWrap =
+        document.getElementById("notificationsWrap");
 
-  function timeAgo(iso) {
-    const diffMs = Date.now() - new Date(iso).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 60) return `${Math.max(mins, 1)} min ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs} hr ago`;
-    const days = Math.floor(hrs / 24);
-    return `${days} day${days > 1 ? "s" : ""} ago`;
-  }
+    const markAllReadBtn =
+        document.getElementById("markAllReadBtn");
 
-  function render() {
-    const notifications = CB.Data.getNotifications().filter((n) => n.userId === session.id).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    if (notifications.length === 0) {
-      wrap.innerHTML = `<div class="empty-state"><h3>No notifications yet</h3><p>Updates about your bookings will appear here.</p></div>`;
-      return;
+    if (!notificationsWrap) return;
+
+    const user = JSON.parse(localStorage.getItem("user"));
+
+    if (!user) {
+        alert("Please login first.");
+        window.location.href = "../login.html";
+        return;
     }
-    wrap.innerHTML = notifications.map((n) => `
-      <div class="notif-card ${n.read ? "" : "unread"}" data-id="${n.id}">
-        <div class="notif-icon ${n.type}">${iconFor(n.type)}</div>
-        <div>
-          <p>${n.message}</p>
-          <div class="notif-time">${timeAgo(n.createdAt)}</div>
-        </div>
-        ${!n.read ? '<span class="notif-dot"></span>' : ""}
-      </div>`).join("");
 
-    wrap.querySelectorAll(".notif-card.unread").forEach((card) => {
-      card.addEventListener("click", () => {
-        const notifications = CB.Data.getNotifications();
-        const idx = notifications.findIndex((n) => n.id === card.dataset.id);
-        if (idx > -1) { notifications[idx].read = true; CB.Data.saveNotifications(notifications); }
-        render();
-      });
-    });
-  }
-  render();
+    const userId = user.user_id;
 
-  const markAllBtn = document.getElementById("markAllReadBtn");
-  if (markAllBtn) {
-    markAllBtn.addEventListener("click", () => {
-      const notifications = CB.Data.getNotifications().map((n) => n.userId === session.id ? { ...n, read: true } : n);
-      CB.Data.saveNotifications(notifications);
-      render();
-      CB.toast("All notifications marked as read.", "ok");
+    let notifications = [];
+
+    async function loadNotifications() {
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/notifications/${userId}`
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to load notifications");
+            }
+
+            notifications = await response.json();
+
+            renderNotifications();
+
+        } catch (error) {
+
+            console.error("Error loading notifications:", error);
+
+            notificationsWrap.innerHTML = `
+                <div class="empty-state">
+                    <h3>Unable to load notifications</h3>
+                    <p>Please make sure the server is running.</p>
+                </div>
+            `;
+        }
+    }
+
+    function renderNotifications() {
+
+        if (notifications.length === 0) {
+
+            notificationsWrap.innerHTML = `
+                <div class="empty-state">
+                    <h3>No notifications</h3>
+                    <p>You don't have any notifications yet.</p>
+                </div>
+            `;
+
+            return;
+        }
+
+        notificationsWrap.innerHTML = notifications.map(notification => {
+
+            const unread =
+                Number(notification.is_read) === 0;
+
+            const iconType =
+                getNotificationType(notification.type);
+
+            return `
+                <div
+                    class="notif-card ${unread ? "unread" : ""}"
+                    data-notification-id="${notification.notification_id}"
+                >
+
+                    <div class="notif-icon ${iconType.className}">
+                        ${iconType.icon}
+                    </div>
+
+                    <div>
+                        <div>
+                            ${notification.message}
+                        </div>
+
+                        <div class="notif-time">
+                            ${formatNotificationDate(
+                                notification.created_at
+                            )}
+                        </div>
+                    </div>
+
+                    ${
+                        unread
+                            ? `<div class="notif-dot"></div>`
+                            : ""
+                    }
+
+                </div>
+            `;
+
+        }).join("");
+    }
+
+    function getNotificationType(type) {
+
+        const value = (type || "").toLowerCase();
+
+        if (value.includes("approved")) {
+            return {
+                className: "success",
+                icon: "✓"
+            };
+        }
+
+        if (value.includes("rejected")) {
+            return {
+                className: "danger",
+                icon: "✕"
+            };
+        }
+
+        if (value.includes("pending")) {
+            return {
+                className: "pending",
+                icon: "!"
+            };
+        }
+
+        if (value.includes("cancel")) {
+            return {
+                className: "neutral",
+                icon: "↩"
+            };
+        }
+
+        return {
+            className: "info",
+            icon: "i"
+        };
+    }
+
+    function formatNotificationDate(dateString) {
+
+        if (!dateString) return "";
+
+        const date = new Date(dateString);
+
+        return date.toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    }
+
+    // Clicking a notification marks it as read
+    notificationsWrap.addEventListener("click", async (e) => {
+
+        const card = e.target.closest("[data-notification-id]");
+
+        if (!card) return;
+
+        const notificationId =
+            card.dataset.notificationId;
+
+        const notification =
+            notifications.find(
+                n =>
+                    String(n.notification_id) ===
+                    String(notificationId)
+            );
+
+        if (!notification) return;
+
+        if (Number(notification.is_read) === 1) return;
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/notifications/${notificationId}/read`,
+                {
+                    method: "PATCH"
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error("Failed to mark as read");
+            }
+
+            await loadNotifications();
+
+        } catch (error) {
+
+            console.error(error);
+        }
     });
-  }
+
+    // Mark all as read
+    if (markAllReadBtn) {
+
+        markAllReadBtn.addEventListener("click", async () => {
+
+            try {
+
+                const response = await fetch(
+                    `http://localhost:3000/notifications/user/${userId}/read-all`,
+                    {
+                        method: "PATCH"
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+
+                    alert(
+                        data.message ||
+                        "Failed to mark notifications as read."
+                    );
+
+                    return;
+                }
+
+                await loadNotifications();
+
+            } catch (error) {
+
+                console.error(error);
+
+                alert("Unable to connect to server.");
+            }
+        });
+    }
+
+    loadNotifications();
 }
 
 /* ---------------- Profile ---------------- */
+/* ---------------- Profile ---------------- */
 function initProfile() {
-  const root = document.getElementById("profileRoot");
-  if (!root) return;
-  const session = CB.Data.getSession();
-  const users = CB.Data.getUsers();
-  const user = users.find((u) => u.id === session.id);
 
-  function render() {
-    const initials = user.name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
-    document.getElementById("profileInitials").textContent = initials;
-    document.getElementById("profileName").textContent = user.name;
-    document.getElementById("profileRole").textContent = `${user.role} \u00b7 ${user.department}`;
-    document.getElementById("valEmail").textContent = user.email;
-    document.getElementById("valDepartment").textContent = user.department;
-    document.getElementById("valStudentId").textContent = user.studentId;
-    document.getElementById("valPhone").textContent = user.phone;
-  }
-  render();
+    const root = document.getElementById("profileRoot");
 
-  const editBtn = document.getElementById("editProfileBtn");
-  const modal = document.getElementById("editProfileModal");
-  editBtn.addEventListener("click", () => {
-    document.getElementById("editName").value = user.name;
-    document.getElementById("editPhone").value = user.phone;
-    document.getElementById("editDepartment").value = user.department;
-    modal.classList.add("open");
-  });
+    if (!root) return;
 
-  document.getElementById("editProfileForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    user.name = document.getElementById("editName").value.trim() || user.name;
-    user.phone = document.getElementById("editPhone").value.trim() || user.phone;
-    user.department = document.getElementById("editDepartment").value || user.department;
+    const user = JSON.parse(localStorage.getItem("user"));
 
-    const idx = users.findIndex((u) => u.id === user.id);
-    users[idx] = user;
-    CB.Data.saveUsers(users);
-    CB.Data.setSession({ id: user.id, name: user.name, email: user.email, department: user.department });
+    if (!user) {
+        window.location.href = "../login.html";
+        return;
+    }
 
-    render();
-    populateUserChip();
-    modal.classList.remove("open");
-    CB.toast("Profile updated successfully.", "ok");
-  });
+    function renderProfile() {
+
+        const initials = user.name
+            .split(" ")
+            .map(p => p[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+
+        document.getElementById("profileInitials").textContent = initials;
+
+        document.getElementById("profileName").textContent =
+            user.name;
+
+        document.getElementById("profileRole").textContent =
+            `${user.role} · ${user.department}`;
+
+        document.getElementById("valEmail").textContent =
+            user.email;
+
+        document.getElementById("valPhone").textContent =
+            user.phone || "—";
+
+        document.getElementById("valDepartment").textContent =
+            user.department || "—";
+
+        document.getElementById("valStudentId").textContent =
+            user.id_number || "—";
+    }
+
+    renderProfile();
+
+    const editBtn =
+        document.getElementById("editProfileBtn");
+
+    const modal =
+        document.getElementById("editProfileModal");
+
+    editBtn.addEventListener("click", () => {
+
+        document.getElementById("editName").value =
+            user.name;
+
+        document.getElementById("editPhone").value =
+            user.phone || "";
+
+        document.getElementById("editDepartment").value =
+            user.department || "";
+
+        modal.classList.add("open");
+    });
+
+    document
+        .getElementById("editProfileForm")
+        .addEventListener("submit", async (e) => {
+
+            e.preventDefault();
+
+            const name =
+                document.getElementById("editName").value.trim();
+
+            const phone =
+                document.getElementById("editPhone").value.trim();
+
+            const department =
+                document.getElementById("editDepartment").value;
+
+            if (!name || !phone || !department) {
+                alert("Please fill all fields.");
+                return;
+            }
+
+            try {
+
+                const response = await fetch(
+                    `http://localhost:3000/user/${user.user_id}`,
+                    {
+                        method: "PUT",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            phone: phone,
+                            department: department
+                        })
+                    }
+                );
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    alert(data.message || "Failed to update profile.");
+                    return;
+                }
+
+                // Update localStorage user
+                user.name = data.user.name;
+                user.phone = data.user.phone;
+                user.department = data.user.department;
+
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify(user)
+                );
+
+                renderProfile();
+
+                populateUserChip();
+
+                modal.classList.remove("open");
+
+                CB.toast(
+                    "Profile updated successfully.",
+                    "ok"
+                );
+
+            } catch (error) {
+
+                console.error("Profile update error:", error);
+
+                alert(
+                    "Unable to connect to server. Make sure the server is running."
+                );
+            }
+        });
 }
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -144,7 +144,9 @@ td.mono, span.mono{ font-family: var(--font-mono); font-size:0.82rem; color: var
 .adm-btn.approve{ background: var(--adm-green-dim); border-color:transparent; color: var(--adm-green); }
 .adm-btn.reject{ background: var(--adm-red-dim); border-color:transparent; color: var(--adm-red); }
 .adm-btn.primary{ background: var(--adm-teal); border-color:transparent; color:#0B1412; }
-.adm-btn-row{ display:flex; gap:8px; }
+.adm-btn-row{ display:flex;
+   gap:8px;
+   }
 
 .admin-toolbar{ display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
 .admin-toolbar input, .admin-toolbar select{

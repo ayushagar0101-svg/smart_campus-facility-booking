@@ -76,7 +76,7 @@ app.post("/login", (req, res) => {
     const { email, password } = req.body;
 
     const sql = `
-        SELECT user_id, name, email, department, id_number, role, status
+        SELECT user_id, name, email, phone, department, id_number, role, status
         FROM user
         WHERE email = ? AND password = ?
     `;
@@ -144,60 +144,6 @@ app.get("/facilities", (req, res) => {
 
         res.json(results);
     });
-});
-
-app.post("/booking", (req, res) => {
-
-    const {
-        user_id,
-        facility_id,
-        date,
-        start_time,
-        end_time,
-        purpose,
-        participants
-    } = req.body;
-
-    // Basic validation
-    if (!user_id || !facility_id || !date || !start_time || !end_time) {
-        return res.status(400).json({
-            message: "Please fill all required fields."
-        });
-    }
-
-    const sql = `
-        INSERT INTO booking
-        (user_id, facility_id, date, start_time, end_time, purpose, participants)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
-    `;
-
-    db.query(
-        sql,
-        [
-            user_id,
-            facility_id,
-            date,
-            start_time,
-            end_time,
-            purpose,
-            participants
-        ],
-        (err, result) => {
-
-            if (err) {
-                console.log(err);
-
-                return res.status(500).json({
-                    message: "Booking failed"
-                });
-            }
-
-            res.json({
-                message: "Booking request submitted successfully!",
-                booking_id: result.insertId
-            });
-        }
-    );
 });
 
 //Get one facility
@@ -520,7 +466,9 @@ app.get("/admin/bookings", (req, res) => {
 });
 
 // ================= ADMIN: UPDATE BOOKING STATUS =================
+// ================= ADMIN: UPDATE BOOKING STATUS =================
 app.patch("/admin/bookings/:bookingId/status", (req, res) => {
+
     const bookingId = req.params.bookingId;
     const { status } = req.body;
 
@@ -532,33 +480,295 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
         });
     }
 
-    const sql = `
-        UPDATE booking
-        SET status = ?
-        WHERE booking_id = ?
-        AND status = 'pending'
+    // First get booking details
+    const getBookingSql = `
+        SELECT
+            b.booking_id,
+            b.user_id,
+            f.name AS facility_name
+        FROM booking b
+        JOIN facility f
+            ON b.facility_id = f.facility_id
+        WHERE b.booking_id = ?
+        AND b.status = 'pending'
     `;
 
-    db.query(sql, [status, bookingId], (err, result) => {
+    db.query(getBookingSql, [bookingId], (err, bookings) => {
 
         if (err) {
             console.log(err);
 
             return res.status(500).json({
-                message: "Failed to update booking status."
+                message: "Failed to get booking details."
             });
         }
 
-        if (result.affectedRows === 0) {
+        if (bookings.length === 0) {
             return res.status(400).json({
                 message: "Booking cannot be updated."
             });
         }
 
+        const booking = bookings[0];
+
+        // Update booking status
+        const updateSql = `
+            UPDATE booking
+            SET status = ?
+            WHERE booking_id = ?
+            AND status = 'pending'
+        `;
+
+        db.query(
+            updateSql,
+            [status, bookingId],
+            (err, result) => {
+
+                if (err) {
+                    console.log(err);
+
+                    return res.status(500).json({
+                        message: "Failed to update booking status."
+                    });
+                }
+
+                if (result.affectedRows === 0) {
+                    return res.status(400).json({
+                        message: "Booking cannot be updated."
+                    });
+                }
+
+                // Create notification
+                const notificationMessage =
+                    `Booking #${booking.booking_id} has been ${status} for ${booking.facility_name}.`;
+
+                const notificationSql = `
+                    INSERT INTO notification
+                    (user_id, type, message, is_read)
+                    VALUES (?, ?, ?, 0)
+                `;
+
+                db.query(
+                    notificationSql,
+                    [
+                        booking.user_id,
+                        status,
+                        notificationMessage
+                    ],
+                    (err) => {
+
+                        if (err) {
+                            console.log("Notification insert error:", err);
+
+                            // Booking was updated, but notification failed
+                            return res.json({
+                                message: `Booking ${status} successfully, but notification could not be created.`
+                            });
+                        }
+
+                        res.json({
+                            message: `Booking ${status} successfully!`
+                        });
+                    }
+                );
+            }
+        );
+    });
+});
+
+// ================= ADMIN: GET ALL USERS =================
+app.get("/admin/users", (req, res) => {
+
+    const sql = `
+        SELECT
+            user_id,
+            name,
+            email,
+            phone,
+            department,
+            id_number,
+            role,
+            status
+        FROM user
+        ORDER BY user_id DESC
+    `;
+
+    db.query(sql, (err, results) => {
+
+        if (err) {
+            console.log(err);
+
+            return res.status(500).json({
+                message: "Failed to load users."
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+
+
+app.get("/notifications/:userId", (req, res) => {
+    const userId = req.params.userId;
+
+    const sql = `
+        SELECT
+            notification_id,
+            user_id,
+            type,
+            message,
+            is_read,
+            created_at
+        FROM notification
+        WHERE user_id = ?
+        ORDER BY created_at DESC
+    `;
+
+    db.query(sql, [userId], (err, results) => {
+        if (err) {
+            console.error("Notification error:", err);
+
+            return res.status(500).json({
+                message: "Failed to load notifications."
+            });
+        }
+
+        res.json(results);
+    });
+});
+
+app.patch("/notifications/:notificationId/read", (req, res) => {
+    const notificationId = req.params.notificationId;
+
+    const sql = `
+        UPDATE notification
+        SET is_read = 1
+        WHERE notification_id = ?
+    `;
+
+    db.query(sql, [notificationId], (err, result) => {
+
+        if (err) {
+            console.error("Notification update error:", err);
+
+            return res.status(500).json({
+                message: "Failed to mark notification as read."
+            });
+        }
+
         res.json({
-            message: `Booking ${status} successfully!`
+            message: "Notification marked as read."
         });
     });
+});
+
+app.patch("/notifications/user/:userId/read-all", (req, res) => {
+    const userId = req.params.userId;
+
+    const sql = `
+        UPDATE notification
+        SET is_read = 1
+        WHERE user_id = ?
+    `;
+
+    db.query(sql, [userId], (err, result) => {
+
+        if (err) {
+            console.error("Mark all read error:", err);
+
+            return res.status(500).json({
+                message: "Failed to mark notifications as read."
+            });
+        }
+
+        res.json({
+            message: "All notifications marked as read."
+        });
+    });
+});
+
+// ================= USER: UPDATE PROFILE =================
+
+app.put("/user/:userId", (req, res) => {
+
+    const userId = req.params.userId;
+
+    const {
+        name,
+        phone,
+        department
+    } = req.body;
+
+    if (!name || !phone || !department) {
+        return res.status(400).json({
+            message: "Please fill all required fields."
+        });
+    }
+
+    const sql = `
+        UPDATE user
+        SET
+            name = ?,
+            phone = ?,
+            department = ?
+        WHERE user_id = ?
+    `;
+
+    db.query(
+        sql,
+        [name, phone, department, userId],
+        (err, result) => {
+
+            if (err) {
+                console.log(err);
+
+                return res.status(500).json({
+                    message: "Failed to update profile."
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "User not found."
+                });
+            }
+
+            const getUserSql = `
+                SELECT
+                    user_id,
+                    name,
+                    email,
+                    phone,
+                    department,
+                    id_number,
+                    role,
+                    status
+                FROM user
+                WHERE user_id = ?
+            `;
+
+            db.query(
+                getUserSql,
+                [userId],
+                (err, results) => {
+
+                    if (err) {
+                        console.log(err);
+
+                        return res.status(500).json({
+                            message: "Profile updated but failed to fetch user."
+                        });
+                    }
+
+                    res.json({
+                        message: "Profile updated successfully!",
+                        user: results[0]
+                    });
+                }
+            );
+        }
+    );
 });
 
 app.listen(3000, () => {
