@@ -65,6 +65,15 @@
           </div>
         </div>
         <div class="field">
+    <label for="regRole">Role</label>
+    <select id="regRole" required>
+        <option value="">Select role</option>
+        <option value="Student">Student</option>
+        <option value="Faculty">Faculty</option>
+    </select>
+    <span class="error-msg"></span>
+</div>
+        <div class="field">
           <label for="regDepartment">Department</label>
           <select id="regDepartment" required>
             <option value="">Select department</option>
@@ -107,6 +116,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
     const email = document.getElementById("regEmail").value;
     const phone = document.getElementById("regPhone").value;
     const id_number = document.getElementById("regId").value;
+    const role = document.getElementById("regRole").value;
     const department = document.getElementById("regDepartment").value;
     const password = document.getElementById("regPassword").value;
     const confirmPassword = document.getElementById("regConfirm").value;
@@ -132,6 +142,7 @@ document.getElementById("registerForm").addEventListener("submit", async functio
                 name: name,
                 email: email,
                 phone: phone,
+                 role: role,
                 id_number: id_number,
                 department: department,
                 password: password

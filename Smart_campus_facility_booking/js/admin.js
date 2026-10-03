@@ -911,6 +911,9 @@ function initAdminUsers() {
 
     let allUsers = [];
 
+    // =========================
+    // LOAD USERS
+    // =========================
     async function loadUsers() {
         try {
             const response = await fetch("http://localhost:3000/admin/users");
@@ -938,7 +941,12 @@ function initAdminUsers() {
         }
     }
 
+
+    // =========================
+    // DISPLAY USERS
+    // =========================
     function render() {
+
         const q = (searchInput.value || "").toLowerCase();
         const role = (roleFilter.value || "").toLowerCase();
 
@@ -960,7 +968,9 @@ function initAdminUsers() {
             return matchesSearch && matchesRole;
         });
 
+
         if (users.length === 0) {
+
             tbody.innerHTML = `
                 <tr>
                     <td colspan="7">
@@ -970,8 +980,10 @@ function initAdminUsers() {
                     </td>
                 </tr>
             `;
+
             return;
         }
+
 
         tbody.innerHTML = users.map((u) => {
 
@@ -980,66 +992,206 @@ function initAdminUsers() {
             const badgeClass =
                 status === "active" ? "ok" : "neutral";
 
+            // Button changes according to current status
+            const statusButton =
+                status === "active"
+                    ? `
+                        <button
+                            class="adm-btn reject"
+                            data-user-status="${u.user_id}"
+                            data-new-status="inactive">
+                            Deactivate
+                        </button>
+                    `
+                    : `
+                        <button
+                            class="adm-btn approve"
+                            data-user-status="${u.user_id}"
+                            data-new-status="active">
+                            Activate
+                        </button>
+                    `;
+
+
             return `
                 <tr>
-                    <td class="mono">${u.user_id}</td>
 
-                    <td>${u.name || "—"}</td>
+                    <td class="mono">
+                        ${u.user_id}
+                    </td>
 
-                    <td>${u.email || "—"}</td>
+                    <td>
+                        ${u.name || "—"}
+                    </td>
 
-                    <td>${u.department || "—"}</td>
+                    <td>
+                        ${u.email || "—"}
+                    </td>
 
-                    <td>${u.role || "—"}</td>
+                    <td>
+                        ${u.department || "—"}
+                    </td>
+
+                    <td>
+                        ${u.role || "—"}
+                    </td>
 
                     <td>
                         <span class="adm-badge ${badgeClass}">
-                            ${u.status || "active"}
+                            ${status}
                         </span>
                     </td>
 
                     <td>
                         <div class="adm-btn-row">
+
                             <button
                                 class="adm-btn"
                                 data-view-user="${u.user_id}">
                                 View
                             </button>
+
+                            ${statusButton}
+
                         </div>
                     </td>
+
                 </tr>
             `;
+
         }).join("");
     }
 
-    /* View user details */
-    tbody.addEventListener("click", (e) => {
 
-        const button = e.target.closest("[data-view-user]");
+    // =========================
+    // VIEW / ACTIVATE / DEACTIVATE
+    // =========================
+    tbody.addEventListener("click", async (e) => {
 
-        if (!button) return;
+        // -------------------------
+        // VIEW USER
+        // -------------------------
+        const viewButton = e.target.closest("[data-view-user]");
 
-        const userId = button.dataset.viewUser;
+        if (viewButton) {
 
-        const user = allUsers.find(
-            (u) => String(u.user_id) === String(userId)
+            const userId = viewButton.dataset.viewUser;
+
+            const user = allUsers.find(
+                (u) => String(u.user_id) === String(userId)
+            );
+
+            if (!user) return;
+
+            alert(
+                `Name: ${user.name}\n` +
+                `Email: ${user.email}\n` +
+                `Phone: ${user.phone || "—"}\n` +
+                `Department: ${user.department || "—"}\n` +
+                `ID Number: ${user.id_number || "—"}\n` +
+                `Role: ${user.role || "—"}\n` +
+                `Status: ${user.status || "—"}`
+            );
+
+            return;
+        }
+
+
+        // -------------------------
+        // ACTIVATE / DEACTIVATE
+        // -------------------------
+        const statusButton = e.target.closest("[data-user-status]");
+
+        if (!statusButton) return;
+
+        const userId = statusButton.dataset.userStatus;
+        const newStatus = statusButton.dataset.newStatus;
+
+        const actionText =
+            newStatus === "active"
+                ? "activate"
+                : "deactivate";
+
+
+        const confirmed = confirm(
+            `Are you sure you want to ${actionText} this user?`
         );
 
-        if (!user) return;
+        if (!confirmed) return;
 
-        alert(
-            `Name: ${user.name}\n` +
-            `Email: ${user.email}\n` +
-            `Phone: ${user.phone || "—"}\n` +
-            `Department: ${user.department || "—"}\n` +
-            `ID Number: ${user.id_number || "—"}\n` +
-            `Role: ${user.role || "—"}\n` +
-            `Status: ${user.status || "—"}`
-        );
+
+        try {
+
+            const response = await fetch(
+                `http://localhost:3000/admin/users/${userId}/status`,
+                {
+                    method: "PATCH",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        status: newStatus
+                    })
+                }
+            );
+
+
+            const data = await response.json();
+
+
+            if (!response.ok) {
+
+                alert(
+                    data.message ||
+                    "Failed to update user status."
+                );
+
+                return;
+            }
+
+
+            alert(data.message);
+
+
+            // Reload latest data from MySQL
+            await loadUsers();
+
+
+        } catch (error) {
+
+            console.error(
+                "Error updating user status:",
+                error
+            );
+
+            alert(
+                "Unable to connect to server."
+            );
+        }
+
     });
 
-    searchInput.addEventListener("input", render);
-    roleFilter.addEventListener("change", render);
+
+    // =========================
+    // SEARCH & ROLE FILTER
+    // =========================
+
+    searchInput.addEventListener(
+        "input",
+        render
+    );
+
+    roleFilter.addEventListener(
+        "change",
+        render
+    );
+
+
+    // =========================
+    // INITIAL LOAD
+    // =========================
 
     loadUsers();
 }

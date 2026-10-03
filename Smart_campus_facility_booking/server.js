@@ -607,6 +607,47 @@ app.get("/admin/users", (req, res) => {
     });
 });
 
+// ================= ADMIN: ACTIVATE / DEACTIVATE USER =================
+
+app.patch("/admin/users/:userId/status", (req, res) => {
+
+    const userId = req.params.userId;
+    const { status } = req.body;
+
+    // Only allow these two statuses
+    if (status !== "active" && status !== "inactive") {
+        return res.status(400).json({
+            message: "Invalid user status."
+        });
+    }
+
+    const sql = `
+        UPDATE user
+        SET status = ?
+        WHERE user_id = ?
+    `;
+
+    db.query(sql, [status, userId], (err, result) => {
+
+        if (err) {
+            console.log(err);
+
+            return res.status(500).json({
+                message: "Failed to update user status."
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                message: "User not found."
+            });
+        }
+
+        res.json({
+            message: `User ${status === "active" ? "activated" : "deactivated"} successfully!`
+        });
+    });
+});
 
 
 app.get("/notifications/:userId", (req, res) => {
@@ -769,6 +810,210 @@ app.put("/user/:userId", (req, res) => {
             );
         }
     );
+});
+
+// ================= ADMIN: ADD FACILITY =================
+
+app.post("/facility", (req, res) => {
+
+    const {
+        name,
+        category,
+        location,
+        capacity,
+        description,
+        open_time,
+        close_time,
+        status
+    } = req.body;
+
+    if (
+        !name ||
+        !category ||
+        !location ||
+        !capacity ||
+        !open_time ||
+        !close_time
+    ) {
+        return res.status(400).json({
+            message: "Please fill all required facility fields."
+        });
+    }
+
+    if (open_time >= close_time) {
+        return res.status(400).json({
+            message: "Closing time must be after opening time."
+        });
+    }
+
+    const sql = `
+        INSERT INTO facility
+        (
+            name,
+            category,
+            location,
+            capacity,
+            description,
+            open_time,
+            close_time,
+            status,
+            availability
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    db.query(
+        sql,
+        [
+            name,
+            category,
+            location,
+            capacity,
+            description || "",
+            open_time,
+            close_time,
+            status || "active",
+            "available"
+        ],
+        (err, result) => {
+
+            if (err) {
+                console.log("Add facility error:", err);
+
+                return res.status(500).json({
+                    message: "Failed to add facility."
+                });
+            }
+
+            res.json({
+                message: "Facility added successfully!",
+                facility_id: result.insertId
+            });
+        }
+    );
+});
+
+
+// ================= ADMIN: UPDATE FACILITY =================
+
+app.put("/facility/:id", (req, res) => {
+
+    const facilityId = req.params.id;
+
+    const {
+        name,
+        category,
+        location,
+        capacity,
+        description,
+        open_time,
+        close_time,
+        status
+    } = req.body;
+
+    if (
+        !name ||
+        !category ||
+        !location ||
+        !capacity ||
+        !open_time ||
+        !close_time
+    ) {
+        return res.status(400).json({
+            message: "Please fill all required facility fields."
+        });
+    }
+
+    if (open_time >= close_time) {
+        return res.status(400).json({
+            message: "Closing time must be after opening time."
+        });
+    }
+
+    const sql = `
+        UPDATE facility
+        SET
+            name = ?,
+            category = ?,
+            location = ?,
+            capacity = ?,
+            description = ?,
+            open_time = ?,
+            close_time = ?,
+            status = ?
+        WHERE facility_id = ?
+    `;
+
+    db.query(
+        sql,
+        [
+            name,
+            category,
+            location,
+            capacity,
+            description || "",
+            open_time,
+            close_time,
+            status || "active",
+            facilityId
+        ],
+        (err, result) => {
+
+            if (err) {
+                console.log("Update facility error:", err);
+
+                return res.status(500).json({
+                    message: "Failed to update facility."
+                });
+            }
+
+            if (result.affectedRows === 0) {
+                return res.status(404).json({
+                    message: "Facility not found."
+                });
+            }
+
+            res.json({
+                message: "Facility updated successfully!"
+            });
+        }
+    );
+});
+
+
+// ================= ADMIN: DELETE FACILITY =================
+
+app.delete("/facility/:id", (req, res) => {
+
+    const facilityId = req.params.id;
+
+    // Soft delete
+    const sql = `
+        UPDATE facility
+        SET status = 'inactive'
+        WHERE facility_id = ?
+    `;
+
+    db.query(sql, [facilityId], (err, result) => {
+
+        if (err) {
+            console.log("Delete facility error:", err);
+
+            return res.status(500).json({
+                message: "Failed to delete facility."
+            });
+        }
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                message: "Facility not found."
+            });
+        }
+
+        res.json({
+            message: "Facility deleted successfully!"
+        });
+    });
 });
 
 app.listen(3000, () => {
