@@ -444,36 +444,63 @@ function renderFacilityCard(f) {
 
 /* ---------------- Login / Register simulation ---------------- */
 function initLoginPage() {
-  const form = document.getElementById("loginForm");
-  if (!form) return;
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-    const password = document.getElementById("loginPassword").value;
-    const users = CB.Data.getUsers();
-    const user = users.find((u) => u.email.toLowerCase() === email);
 
-    clearFieldError("loginEmail");
-    clearFieldError("loginPassword");
+    const form = document.getElementById("loginForm");
 
-    if (!user) {
-      setFieldError("loginEmail", "No account found with this email.");
-      return;
-    }
-    if (user.status === "Inactive") {
-      CB.toast("This account has been deactivated. Contact administration.", "error");
-      return;
-    }
-    if (user.password !== password) {
-      setFieldError("loginPassword", "Incorrect password. Try demo1234.");
-      return;
-    }
-    CB.Data.setSession({ id: user.id, name: user.name, email: user.email, department: user.department });
-    CB.toast(`Welcome back, ${user.name.split(" ")[0]}!`, "ok");
-    const params = new URLSearchParams(window.location.search);
-    const redirect = params.get("redirect");
-    setTimeout(() => { window.location.href = redirect || "user/dashboard.html"; }, 600);
-  });
+    if (!form) return;
+
+    form.addEventListener("submit", async function(e) {
+
+        e.preventDefault();
+
+        const email =
+            document.getElementById("loginEmail").value.trim();
+
+        const password =
+            document.getElementById("loginPassword").value;
+
+        try {
+
+            const response = await fetch(
+                "http://localhost:3000/login",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+
+                    body: JSON.stringify({
+                        email: email,
+                        password: password
+                    })
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                alert(data.message || "Login failed.");
+                return;
+            }
+
+            // Save MySQL user data
+            localStorage.setItem(
+                "user",
+                JSON.stringify(data.user)
+            );
+
+            console.log("Logged in user:", data.user);
+
+            window.location.href = "user/dashboard.html";
+
+        } catch (error) {
+
+            console.error("Login error:", error);
+
+            alert("Unable to connect to server.");
+        }
+    });
 }
 
 function initRegisterPage() {

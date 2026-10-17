@@ -338,10 +338,39 @@ app.post("/booking", (req, res) => {
                 });
             }
 
-            res.json({
-                message: "Booking request submitted successfully!",
-                booking_id: result.insertId
-            });
+            const bookingId = result.insertId;
+            const notificationMessage =
+                `Your booking request #${bookingId} has been submitted and is pending approval.`;
+            const notificationSql = `
+                INSERT INTO notification
+                (user_id, type, message, is_read)
+                VALUES (?, 'pending', ?, 0)
+            `;
+
+            db.query(
+                notificationSql,
+                [user_id, notificationMessage],
+                (notificationError) => {
+                    if (notificationError) {
+                        console.error(
+                            "Booking notification insert error:",
+                            notificationError
+                        );
+
+                        return res.status(201).json({
+                            message: "Booking request submitted, but its notification could not be created.",
+                            booking_id: bookingId,
+                            notification_created: false
+                        });
+                    }
+
+                    res.status(201).json({
+                        message: "Booking request submitted successfully!",
+                        booking_id: bookingId,
+                        notification_created: true
+                    });
+                }
+            );
         }
     );
 });
@@ -467,12 +496,17 @@ app.get("/admin/bookings", (req, res) => {
 
 // ================= ADMIN: UPDATE BOOKING STATUS =================
 // ================= ADMIN: UPDATE BOOKING STATUS =================
+
 app.patch("/admin/bookings/:bookingId/status", (req, res) => {
 
     const bookingId = req.params.bookingId;
     const { status } = req.body;
 
-    const allowedStatuses = ["approved", "rejected", "cancelled"];
+    const allowedStatuses = [
+        "approved",
+        "rejected",
+        "cancelled"
+    ];
 
     if (!allowedStatuses.includes(status)) {
         return res.status(400).json({
@@ -480,7 +514,7 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
         });
     }
 
-    // First get booking details
+    // Get booking details
     const getBookingSql = `
         SELECT
             b.booking_id,
@@ -496,7 +530,7 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
     db.query(getBookingSql, [bookingId], (err, bookings) => {
 
         if (err) {
-            console.log(err);
+            console.error("Get booking error:", err);
 
             return res.status(500).json({
                 message: "Failed to get booking details."
@@ -525,7 +559,7 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
             (err, result) => {
 
                 if (err) {
-                    console.log(err);
+                    console.error("Update booking error:", err);
 
                     return res.status(500).json({
                         message: "Failed to update booking status."
@@ -534,13 +568,29 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
 
                 if (result.affectedRows === 0) {
                     return res.status(400).json({
-                        message: "Booking cannot be updated."
+                        message: "Booking could not be updated."
                     });
                 }
 
-                // Create notification
-                const notificationMessage =
-                    `Booking #${booking.booking_id} has been ${status} for ${booking.facility_name}.`;
+                // ================= CREATE NOTIFICATION =================
+
+                let notificationMessage = "";
+
+                if (status === "approved") {
+
+                    notificationMessage =
+                        `Booking #${booking.booking_id} has been approved for ${booking.facility_name}.`;
+
+                } else if (status === "rejected") {
+
+                    notificationMessage =
+                        `Booking #${booking.booking_id} has been rejected for ${booking.facility_name}.`;
+
+                } else if (status === "cancelled") {
+
+                    notificationMessage =
+                        `Booking #${booking.booking_id} has been cancelled for ${booking.facility_name}.`;
+                }
 
                 const notificationSql = `
                     INSERT INTO notification
@@ -558,16 +608,28 @@ app.patch("/admin/bookings/:bookingId/status", (req, res) => {
                     (err) => {
 
                         if (err) {
-                            console.log("Notification insert error:", err);
 
-                            // Booking was updated, but notification failed
-                            return res.json({
-                                message: `Booking ${status} successfully, but notification could not be created.`
+                            console.error(
+                                "Notification insert error:",
+                                err
+                            );
+
+                            return res.status(500).json({
+                                message:
+                                    "Booking updated, but notification was not created."
                             });
                         }
 
+                        console.log(
+                            "Notification created:",
+                            booking.user_id,
+                            status,
+                            notificationMessage
+                        );
+
                         res.json({
-                            message: `Booking ${status} successfully!`
+                            message:
+                                `Booking ${status} successfully!`
                         });
                     }
                 );
