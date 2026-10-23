@@ -12,24 +12,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createConnection({
-    // host: "localhost",
-    // user: "root",
-    // password: "Ayush@123",
-    // database: "campus_booking"
+// const db = mysql.createConnection({
+   
     
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+//     host: process.env.DB_HOST,
+//     user: process.env.DB_USER,
+//     password: process.env.DB_PASSWORD,
+//     database: process.env.DB_NAME
 
       
+// });
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT || 3306),
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+    ssl: {
+        rejectUnauthorized: true
+    },
+    connectTimeout: 20000
 });
+// db.connect((err) => {
+//     if (err) {
+//         console.log("Database connection failed:");
+//         console.log(err.message);
+//     } else {
+//         console.log("MySQL connected successfully!");
+//     }
+// });
 
 db.connect((err) => {
     if (err) {
-        console.log("Database connection failed:");
-        console.log(err.message);
+        console.error("Database connection failed:");
+        console.error("Error code:", err.code);
+        console.error("Error message:", err.message);
     } else {
         console.log("MySQL connected successfully!");
     }
