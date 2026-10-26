@@ -1,7 +1,10 @@
-/* =========================================================
-   CampusBook — User Portal logic
+﻿/* =========================================================
+   CampusBook - User Portal logic
    ========================================================= */
 
+const API_BASE = (typeof window !== "undefined" && window.API_BASE !== undefined)
+  ? window.API_BASE
+  : (typeof window !== "undefined" && (window.location.protocol === "file:" || window.location.port === "5500" || window.location.port === "5501") ? "http://localhost:3000" : "");
 (function guard() {
     const user = JSON.parse(localStorage.getItem("user"));
 
@@ -77,13 +80,13 @@ async function initDashboard() {
                 : "Good Evening";
 
     document.getElementById("greetingText").textContent =
-        `${greeting}, ${user.name.split(" ")[0]} 👋`;
+        `${greeting}, ${user.name.split(" ")[0]} ðŸ‘‹`;
 
     try {
 
         // Get user's bookings
         const bookingResponse = await fetch(
-            `http://localhost:3000/my-bookings/${user.user_id}`
+            `${API_BASE}/my-bookings/${user.user_id}`
         );
 
         const bookings = await bookingResponse.json();
@@ -142,7 +145,7 @@ async function initDashboard() {
 
                         <div class="meta">
                             ${formatDashboardDate(upcoming.date)}
-                            ·
+                            Â·
                             ${upcoming.start_time}
                             -
                             ${upcoming.end_time}
@@ -180,7 +183,7 @@ async function initDashboard() {
 
         // Load recommended facilities
         const facilityResponse =
-            await fetch("http://localhost:3000/facilities");
+            await fetch(`${API_BASE}/facilities`);
 
         const facilities =
             await facilityResponse.json();
@@ -206,7 +209,7 @@ async function initDashboard() {
                 <div class="facility-card">
 
                     <div class="facility-media">
-                        🏫
+                        ðŸ«
                     </div>
 
                     <div class="facility-body">
@@ -216,15 +219,15 @@ async function initDashboard() {
                         <div class="facility-meta">
 
                             <span>
-                                📍 ${f.location}
+                                ðŸ“ ${f.location}
                             </span>
 
                             <span>
-                                👥 Capacity: ${f.capacity}
+                                ðŸ‘¥ Capacity: ${f.capacity}
                             </span>
 
                             <span>
-                                🏷️ ${f.category}
+                                ðŸ·ï¸ ${f.category}
                             </span>
 
                         </div>
@@ -368,7 +371,7 @@ function initBookingHistory() {
     async function loadHistory() {
         try {
             const response = await fetch(
-                `http://localhost:3000/my-bookings/${userId}`
+                `${API_BASE}/my-bookings/${userId}`
             );
 
             if (!response.ok) {
@@ -455,7 +458,7 @@ function initBookingHistory() {
                     </td>
 
                     <td>
-                        ${booking.facility_name || "—"}
+                        ${booking.facility_name || "â€”"}
                     </td>
 
                     <td>
@@ -463,9 +466,9 @@ function initBookingHistory() {
                     </td>
 
                     <td>
-                        ${booking.start_time || "—"}
+                        ${booking.start_time || "â€”"}
                         -
-                        ${booking.end_time || "—"}
+                        ${booking.end_time || "â€”"}
                     </td>
 
                     <td>
@@ -499,7 +502,7 @@ function initBookingHistory() {
 
     function formatHistoryDate(dateString) {
 
-        if (!dateString) return "—";
+        if (!dateString) return "â€”";
 
         const date = new Date(dateString);
 
@@ -549,7 +552,7 @@ function initNotifications() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/notifications/${userId}`
+                `${API_BASE}/notifications/${userId}`
             );
 
             if (!response.ok) {
@@ -636,14 +639,14 @@ function initNotifications() {
         if (value.includes("approved")) {
             return {
                 className: "success",
-                icon: "✓"
+                icon: "âœ“"
             };
         }
 
         if (value.includes("rejected")) {
             return {
                 className: "danger",
-                icon: "✕"
+                icon: "âœ•"
             };
         }
 
@@ -657,7 +660,7 @@ function initNotifications() {
         if (value.includes("cancel")) {
             return {
                 className: "neutral",
-                icon: "↩"
+                icon: "â†©"
             };
         }
 
@@ -706,7 +709,7 @@ function initNotifications() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/notifications/${notificationId}/read`,
+                `${API_BASE}/notifications/${notificationId}/read`,
                 {
                     method: "PATCH"
                 }
@@ -732,7 +735,7 @@ function initNotifications() {
             try {
 
                 const response = await fetch(
-                    `http://localhost:3000/notifications/user/${userId}/read-all`,
+                    `${API_BASE}/notifications/user/${userId}/read-all`,
                     {
                         method: "PATCH"
                     }
@@ -794,19 +797,19 @@ function initProfile() {
             user.name;
 
         document.getElementById("profileRole").textContent =
-            `${user.role} · ${user.department}`;
+            `${user.role} Â· ${user.department}`;
 
         document.getElementById("valEmail").textContent =
             user.email;
 
         document.getElementById("valPhone").textContent =
-            user.phone || "—";
+            user.phone || "â€”";
 
         document.getElementById("valDepartment").textContent =
-            user.department || "—";
+            user.department || "â€”";
 
         document.getElementById("valStudentId").textContent =
-            user.id_number || "—";
+            user.id_number || "â€”";
     }
 
     renderProfile();
@@ -854,7 +857,7 @@ function initProfile() {
             try {
 
                 const response = await fetch(
-                    `http://localhost:3000/user/${user.user_id}`,
+                    `${API_BASE}/user/${user.user_id}`,
                     {
                         method: "PUT",
                         headers: {
@@ -918,3 +921,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initNotifications();
   initProfile();
 });
+

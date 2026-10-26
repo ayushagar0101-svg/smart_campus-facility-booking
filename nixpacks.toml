@@ -1,0 +1,8 @@
+﻿[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["cd Smart_campus_facility_booking && npm install --omit=dev"]
+
+[start]
+cmd = "node Smart_campus_facility_booking/server.js"

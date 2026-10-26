@@ -1,0 +1,13 @@
+﻿{
+  "name": "campusbook-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Campus Facility Booking System - Root Deployment",
+  "scripts": {
+    "start": "node Smart_campus_facility_booking/server.js",
+    "test": "node -c Smart_campus_facility_booking/server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

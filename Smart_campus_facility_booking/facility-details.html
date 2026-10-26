@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Facility Details — CampusBook</title>
+<title>Facility Details â€” CampusBook</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -40,9 +40,9 @@
       <span class="badge" id="facAvailBadge" style="margin-top:8px;"></span>
       <p class="desc" id="facDesc" style="margin-top:16px;"></p>
       <div class="facility-meta">
-        <span>🏷️ Category: <strong id="facCategory"></strong></span>
-        <span>📍 Location: <strong id="facLocation"></strong></span>
-        <span>👥 Capacity: <strong id="facCapacity"></strong></span>
+        <span>ðŸ·ï¸ Category: <strong id="facCategory"></strong></span>
+        <span>ðŸ“ Location: <strong id="facLocation"></strong></span>
+        <span>ðŸ‘¥ Capacity: <strong id="facCapacity"></strong></span>
       </div>
       <h4 style="margin-top:26px; font-size:1rem;">Available equipment</h4>
       <div class="equip-list" id="facEquipment" style="margin-top:12px;"></div>
@@ -100,6 +100,7 @@
 <script src="js/main.js"></script>
 
 <script>
+const API_BASE = window.API_BASE || '';
 
 let currentFacility = null;
 
@@ -159,7 +160,7 @@ async function loadFacility() {
         console.log("Trying to load facility:", facilityId);
 
         const response = await fetch(
-            `http://localhost:3000/facility/${facilityId}`
+            `${API_BASE}/facility/${facilityId}`
         );
 
         console.log("Response status:", response.status);
@@ -238,7 +239,7 @@ checkAvailabilityBtn.addEventListener("click", async function() {
     try {
 
         const response = await fetch(
-            "http://localhost:3000/check-availability",
+            `${API_BASE}/check-availability`,
             {
                 method: "POST",
 
@@ -264,7 +265,7 @@ checkAvailabilityBtn.addEventListener("click", async function() {
         if (data.available) {
 
             availabilityResult.textContent =
-                "Available ✓";
+                "Available âœ“";
 
             confirmBookingBtn.style.display = "block";
 
@@ -338,7 +339,7 @@ confirmBookingBtn.addEventListener("click", async function() {
     try {
 
         const response = await fetch(
-            "http://localhost:3000/booking",
+            `${API_BASE}/booking`,
             {
                 method: "POST",
 
@@ -375,7 +376,7 @@ confirmBookingBtn.addEventListener("click", async function() {
 
             bookingConfirmed.innerHTML = `
                 <div style="margin-top:20px;">
-                    <h4>Booking Request Submitted ✓</h4>
+                    <h4>Booking Request Submitted âœ“</h4>
                     <p>
                         ${data.message}
                     </p>
@@ -414,3 +415,4 @@ confirmBookingBtn.addEventListener("click", async function() {
 
 </body>
 </html>
+

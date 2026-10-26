@@ -1,7 +1,10 @@
-/* =========================================================
-   CampusBook — Admin Portal logic
+﻿/* =========================================================
+   CampusBook - Admin Portal logic
    ========================================================= */
 
+const API_BASE = (typeof window !== "undefined" && window.API_BASE !== undefined)
+  ? window.API_BASE
+  : (typeof window !== "undefined" && (window.location.protocol === "file:" || window.location.port === "5500" || window.location.port === "5501") ? "http://localhost:3000" : "");
 const ADMIN_CREDENTIALS = { email: "admin@campusbook.com", password: "admin123" };
 
 (function guard() {
@@ -88,11 +91,11 @@ function initAdminDashboard() {
                 bookingsResponse
             ] = await Promise.all([
 
-                fetch("http://localhost:3000/facilities"),
+                fetch(`${API_BASE}/facilities`),
 
-                fetch("http://localhost:3000/admin/users"),
+                fetch(`${API_BASE}/admin/users`),
 
-                fetch("http://localhost:3000/admin/bookings")
+                fetch(`${API_BASE}/admin/bookings`)
 
             ]);
 
@@ -117,12 +120,12 @@ function initAdminDashboard() {
 
             console.error("Dashboard error:", error);
 
-            facilitiesStat.textContent = "—";
-            usersStat.textContent = "—";
-            bookingsStat.textContent = "—";
-            pendingStat.textContent = "—";
-            approvedStat.textContent = "—";
-            cancelledStat.textContent = "—";
+            facilitiesStat.textContent = "â€”";
+            usersStat.textContent = "â€”";
+            bookingsStat.textContent = "â€”";
+            pendingStat.textContent = "â€”";
+            approvedStat.textContent = "â€”";
+            cancelledStat.textContent = "â€”";
 
             pendingPreview.innerHTML = `
                 <div class="admin-empty">
@@ -325,13 +328,13 @@ function initAdminDashboard() {
 
                             <div>
                                 ${booking.user_name || "Unknown User"}
-                                ·
+                                Â·
                                 ${booking.facility_name || "Unknown Facility"}
                             </div>
 
                             <small>
                                 ${formatAdminDate(booking.date)}
-                                ·
+                                Â·
                                 ${booking.start_time}
                                 -
                                 ${booking.end_time}
@@ -366,7 +369,7 @@ function initAdminRequests() {
 
     async function loadBookings() {
         try {
-            const response = await fetch("http://localhost:3000/admin/bookings");
+            const response = await fetch(`${API_BASE}/admin/bookings`);
 
             if (!response.ok) {
                 throw new Error("Failed to load bookings");
@@ -437,13 +440,13 @@ function initAdminRequests() {
                     </td>
 
                     <td>
-                        ${b.user_name || "—"}
+                        ${b.user_name || "â€”"}
                         <br>
                         <small>${b.user_email || ""}</small>
                     </td>
 
                     <td>
-                        ${b.facility_name || "—"}
+                        ${b.facility_name || "â€”"}
                     </td>
 
                     <td>
@@ -538,7 +541,7 @@ function initAdminRequests() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/admin/bookings/${bookingId}/status`,
+                `${API_BASE}/admin/bookings/${bookingId}/status`,
                 {
                     method: "PATCH",
 
@@ -606,7 +609,7 @@ function initAdminFacilities() {
     // Load facilities from MySQL
     async function loadFacilities() {
         try {
-            const response = await fetch("http://localhost:3000/facilities");
+            const response = await fetch(`${API_BASE}/facilities`);
 
             if (!response.ok) {
                 throw new Error("Failed to load facilities");
@@ -657,21 +660,21 @@ function initAdminFacilities() {
                 <tr>
 
                     <td>
-                        <strong>${facility.name || "—"}</strong>
+                        <strong>${facility.name || "â€”"}</strong>
                         <br>
                         <small>${facility.description || ""}</small>
                     </td>
 
                     <td>
-                        ${facility.category || "—"}
+                        ${facility.category || "â€”"}
                     </td>
 
                     <td>
-                        ${facility.location || "—"}
+                        ${facility.location || "â€”"}
                     </td>
 
                     <td>
-                        ${facility.capacity || "—"}
+                        ${facility.capacity || "â€”"}
                     </td>
 
                     <td>
@@ -775,7 +778,7 @@ function initAdminFacilities() {
             try {
 
                 const response = await fetch(
-                    `http://localhost:3000/facility/${facilityId}`,
+                    `${API_BASE}/facility/${facilityId}`,
                     {
                         method: "DELETE"
                     }
@@ -841,7 +844,7 @@ function initAdminFacilities() {
             if (editingFacilityId) {
 
                 response = await fetch(
-                    `http://localhost:3000/facility/${editingFacilityId}`,
+                    `${API_BASE}/facility/${editingFacilityId}`,
                     {
                         method: "PUT",
                         headers: {
@@ -856,7 +859,7 @@ function initAdminFacilities() {
             else {
 
                 response = await fetch(
-                    "http://localhost:3000/facility",
+                    `${API_BASE}/facility`,
                     {
                         method: "POST",
                         headers: {
@@ -916,7 +919,7 @@ function initAdminUsers() {
     // =========================
     async function loadUsers() {
         try {
-            const response = await fetch("http://localhost:3000/admin/users");
+            const response = await fetch(`${API_BASE}/admin/users`);
 
             if (!response.ok) {
                 throw new Error("Failed to load users");
@@ -1021,19 +1024,19 @@ function initAdminUsers() {
                     </td>
 
                     <td>
-                        ${u.name || "—"}
+                        ${u.name || "â€”"}
                     </td>
 
                     <td>
-                        ${u.email || "—"}
+                        ${u.email || "â€”"}
                     </td>
 
                     <td>
-                        ${u.department || "—"}
+                        ${u.department || "â€”"}
                     </td>
 
                     <td>
-                        ${u.role || "—"}
+                        ${u.role || "â€”"}
                     </td>
 
                     <td>
@@ -1086,11 +1089,11 @@ function initAdminUsers() {
             alert(
                 `Name: ${user.name}\n` +
                 `Email: ${user.email}\n` +
-                `Phone: ${user.phone || "—"}\n` +
-                `Department: ${user.department || "—"}\n` +
-                `ID Number: ${user.id_number || "—"}\n` +
-                `Role: ${user.role || "—"}\n` +
-                `Status: ${user.status || "—"}`
+                `Phone: ${user.phone || "â€”"}\n` +
+                `Department: ${user.department || "â€”"}\n` +
+                `ID Number: ${user.id_number || "â€”"}\n` +
+                `Role: ${user.role || "â€”"}\n` +
+                `Status: ${user.status || "â€”"}`
             );
 
             return;
@@ -1123,7 +1126,7 @@ function initAdminUsers() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/admin/users/${userId}/status`,
+                `${API_BASE}/admin/users/${userId}/status`,
                 {
                     method: "PATCH",
 
@@ -1208,7 +1211,7 @@ function initAdminBookings() {
 
     async function loadBookings() {
         try {
-            const response = await fetch("http://localhost:3000/admin/bookings");
+            const response = await fetch(`${API_BASE}/admin/bookings`);
 
             if (!response.ok) {
                 throw new Error("Failed to load bookings");
@@ -1301,7 +1304,7 @@ function initAdminBookings() {
                         ${b.start_time} - ${b.end_time}
                     </td>
 
-                    <td>${b.purpose || "—"}</td>
+                    <td>${b.purpose || "â€”"}</td>
 
                     <td>
                         <span class="adm-badge ${badgeClass}">
@@ -1360,7 +1363,7 @@ function initAdminBookings() {
         try {
 
             const response = await fetch(
-                `http://localhost:3000/admin/bookings/${bookingId}/status`,
+                `${API_BASE}/admin/bookings/${bookingId}/status`,
                 {
                     method: "PATCH",
                     headers: {
@@ -1430,8 +1433,8 @@ function initAdminReports() {
         try {
 
             const [bookingResponse, facilityResponse] = await Promise.all([
-                fetch("http://localhost:3000/admin/bookings"),
-                fetch("http://localhost:3000/facilities")
+                fetch(`${API_BASE}/admin/bookings`),
+                fetch(`${API_BASE}/facilities`)
             ]);
 
             if (!bookingResponse.ok || !facilityResponse.ok) {
@@ -1448,9 +1451,9 @@ function initAdminReports() {
             console.error("Error loading reports:", error);
 
             totalBookings.textContent = "Error";
-            topFacility.textContent = "—";
-            topUser.textContent = "—";
-            utilization.textContent = "—";
+            topFacility.textContent = "â€”";
+            topUser.textContent = "â€”";
+            utilization.textContent = "â€”";
         }
     }
 
@@ -1487,7 +1490,7 @@ function initAdminReports() {
 
         } else {
 
-            topFacility.textContent = "—";
+            topFacility.textContent = "â€”";
         }
 
 
@@ -1518,7 +1521,7 @@ function initAdminReports() {
 
         } else {
 
-            topUser.textContent = "—";
+            topUser.textContent = "â€”";
         }
 
 
@@ -1622,3 +1625,4 @@ document.addEventListener("DOMContentLoaded", () => {
   initAdminUsers();
   initAdminReports();
 });
+

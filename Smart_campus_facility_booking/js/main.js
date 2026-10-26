@@ -1,8 +1,23 @@
-/* =========================================================
-   CampusBook — Core data layer & shared utilities
-   Frontend-only demo. All "database" state lives in localStorage.
+﻿/* =========================================================
+   CampusBook - Core data layer & shared utilities
    ========================================================= */
 
+const API_BASE = (function () {
+  if (typeof window !== "undefined" && window.API_BASE_URL) {
+    return window.API_BASE_URL;
+  }
+  if (typeof window !== "undefined") {
+    const port = window.location.port;
+    if (window.location.protocol === "file:" || port === "5500" || port === "5501") {
+      return "http://localhost:3000";
+    }
+  }
+  return "";
+})();
+
+if (typeof window !== "undefined") {
+  window.API_BASE = API_BASE;
+}
 const CB = (function () {
   const KEYS = {
     facilities: "cb_facilities",
@@ -247,9 +262,9 @@ function renderFacilityCard(f) {
       <div class="facility-body">
         <h3>${f.name}</h3>
         <div class="facility-meta">
-          <span>📍 ${f.location}</span>
-          <span>👥 Capacity: ${f.capacity}</span>
-          <span>🏷️ ${f.category}</span>
+          <span>ðŸ“ ${f.location}</span>
+          <span>ðŸ‘¥ Capacity: ${f.capacity}</span>
+          <span>ðŸ·ï¸ ${f.category}</span>
         </div>
         ${availBadge}
         <div class="facility-actions">
@@ -320,7 +335,7 @@ function renderFacilityCard(f) {
 //   const id = params.get("id");
 //   const facility = CB.Data.getFacilities().find((f) => f.id === id) || CB.Data.getFacilities()[0];
 
-//   document.title = `${facility.name} — CampusBook`;
+//   document.title = `${facility.name} â€” CampusBook`;
 //   document.getElementById("facName").textContent = facility.name;
 //   document.getElementById("facDesc").textContent = facility.description;
 //   document.getElementById("facCategory").textContent = facility.category;
@@ -354,14 +369,14 @@ function renderFacilityCard(f) {
 //     if (!date || !start || !end || !purpose) {
 //       resultBox.className = "badge danger";
 //       resultBox.style.display = "inline-flex";
-//       resultBox.textContent = "✕ Please fill in date, time and purpose first.";
+//       resultBox.textContent = "âœ• Please fill in date, time and purpose first.";
 //       confirmBtn.style.display = "none";
 //       return;
 //     }
 //     if (start >= end) {
 //       resultBox.className = "badge danger";
 //       resultBox.style.display = "inline-flex";
-//       resultBox.textContent = "✕ End time must be after start time.";
+//       resultBox.textContent = "âœ• End time must be after start time.";
 //       confirmBtn.style.display = "none";
 //       return;
 //     }
@@ -378,12 +393,12 @@ function renderFacilityCard(f) {
 //     if (clash || facility.availability === "Maintenance") {
 //       resultBox.className = "badge danger";
 //       resultBox.style.display = "inline-flex";
-//       resultBox.textContent = "✕ Facility is not available at this time.";
+//       resultBox.textContent = "âœ• Facility is not available at this time.";
 //       confirmBtn.style.display = "none";
 //     } else {
 //       resultBox.className = "badge ok";
 //       resultBox.style.display = "inline-flex";
-//       resultBox.textContent = "✓ Facility is available";
+//       resultBox.textContent = "âœ“ Facility is available";
 //       confirmBtn.style.display = "inline-flex";
 //     }
 //   });
@@ -462,7 +477,7 @@ function initLoginPage() {
         try {
 
             const response = await fetch(
-                "http://localhost:3000/login",
+                `${API_BASE}/login`,
                 {
                     method: "POST",
 
@@ -560,5 +575,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // initFacilitiesPage();
   // initFacilityDetailsPage();
   initLoginPage();
-  initRegisterPage();
+  // initRegisterPage(); // Handled by register.html backend API handler
 });
+

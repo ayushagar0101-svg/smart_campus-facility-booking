@@ -1,4 +1,4 @@
-
+﻿
 <!DOCTYPE html>
 <html lang="en">
 
@@ -6,7 +6,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>My Bookings — CampusBook</title>
+<title>My Bookings â€” CampusBook</title>
 
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="../css/user.css">
@@ -387,6 +387,7 @@
 
 
 <script>
+const API_BASE = window.API_BASE || '';
 
 
 // ======================================================
@@ -465,7 +466,7 @@ if (!user) {
 
 
             const response = await fetch(
-                `http://localhost:3000/my-bookings/${userId}`
+                `${API_BASE}/my-bookings/${userId}`
             );
 
 
@@ -777,7 +778,7 @@ if (!user) {
                 // ======================================
 
                 const apiUrl =
-                    `http://localhost:3000/booking/${selectedBookingId}/cancel`;
+                    `${API_BASE}/booking/${selectedBookingId}/cancel`;
 
 
                 console.log(
@@ -954,5 +955,6 @@ if (!user) {
 
 </body>
 </html>
+
 
 

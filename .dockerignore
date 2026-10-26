@@ -1,0 +1,11 @@
+﻿.git
+.gitignore
+.dockerignore
+**/node_modules
+**/.env
+**/.env.*
+.vscode
+**/.vscode
+**/{user,admin,css,js,images}
+*.md
+database/

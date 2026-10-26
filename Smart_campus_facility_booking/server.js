@@ -1,8 +1,5 @@
-// const express = require("express");
-// const mysql = require("mysql2");
-// const cors = require("cors");
 require("dotenv").config();
-
+const path = require("path");
 const express = require("express");
 const mysql = require("mysql2");
 const cors = require("cors");
@@ -12,48 +9,54 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const db = mysql.createConnection({
-   
-    
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+// Database connection configuration with Railway, cloud, and local support
+const dbConfig = {
+    host: process.env.DB_HOST || process.env.MYSQLHOST || "localhost",
+    port: Number(process.env.DB_PORT || process.env.MYSQLPORT || 3306),
+    user: process.env.DB_USER || process.env.MYSQLUSER || "root",
+    password: process.env.DB_PASSWORD || process.env.MYSQLPASSWORD || "",
+    database: process.env.DB_NAME || process.env.MYSQLDATABASE || "campus_booking",
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0,
+    enableKeepAlive: true,
+    keepAliveInitialDelay: 10000
+};
 
-      
-});
-// const db = mysql.createConnection({
-//     host: process.env.DB_HOST,
-//     port: Number(process.env.DB_PORT || 3306),
-//     user: process.env.DB_USER,
-//     password: process.env.DB_PASSWORD,
-//     database: process.env.DB_NAME,
-//     ssl: {
-//         rejectUnauthorized: true
-//     },
-//     connectTimeout: 20000
-// });
-// db.connect((err) => {
-//     if (err) {
-//         console.log("Database connection failed:");
-//         console.log(err.message);
-//     } else {
-//         console.log("MySQL connected successfully!");
-//     }
-// });
+if (process.env.DB_SSL === "true" || process.env.MYSQL_SSL === "true") {
+    dbConfig.ssl = { rejectUnauthorized: false };
+}
 
-db.connect((err) => {
+// Connection pool handles reconnects, idle timeouts, and concurrent requests
+const db = (process.env.DATABASE_URL || process.env.MYSQL_URL)
+    ? mysql.createPool(process.env.DATABASE_URL || process.env.MYSQL_URL)
+    : mysql.createPool(dbConfig);
+
+// Test pool connection on startup
+db.getConnection((err, conn) => {
     if (err) {
-        console.error("Database connection failed:");
+        console.error("⚠️ Database connection failed on startup:");
         console.error("Error code:", err.code);
         console.error("Error message:", err.message);
+        console.error("Verify DB_HOST, DB_USER, DB_NAME, DB_PORT or Railway MYSQLHOST variables.");
     } else {
-        console.log("MySQL connected successfully!");
+        console.log("✅ MySQL database connected successfully via connection pool!");
+        conn.release();
     }
 });
 
+// Health check endpoint for Railway monitoring
+app.get("/health", (req, res) => {
+    res.json({
+        status: "healthy",
+        uptime: process.uptime(),
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Explicit home page route
 app.get("/", (req, res) => {
-    res.send("Smart Campus Booking Server is running!");
+    res.sendFile(path.join(__dirname, "index.html"));
 });
 
 app.post("/register", (req, res) => {
@@ -64,18 +67,27 @@ app.post("/register", (req, res) => {
         phone,
         department,
         id_number,
-        password
+        password,
+        role
     } = req.body;
+
+    if (!name || !email || !password) {
+        return res.status(400).json({
+            message: "Name, email, and password are required."
+        });
+    }
+
+    const assignedRole = (role && role.trim().toLowerCase() === "faculty") ? "Faculty" : "student";
 
     const sql = `
         INSERT INTO user
-        (name, email, phone, department, id_number, password)
-        VALUES (?, ?, ?, ?, ?, ?)
+        (name, email, phone, department, id_number, password, role)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
 
     db.query(
         sql,
-        [name, email, phone, department, id_number, password],
+        [name, email, phone || null, department || null, id_number || null, password, assignedRole],
         (err, result) => {
 
             if (err) {
@@ -1107,6 +1119,12 @@ app.delete("/facility/:id", (req, res) => {
     });
 });
 
-app.listen(3000, () => {
-    console.log("Server running at http://localhost:3000");
+// Serve static frontend assets
+app.use(express.static(path.join(__dirname, ".")));
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
 });
+
+
